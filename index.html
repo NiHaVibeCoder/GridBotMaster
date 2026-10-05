@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>GridBot Master</title>
+<link rel="stylesheet" href="style.css?v=2026-10-04-1">
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <h1>GridBot Master</h1>
+    <p class="subtitle">Eignung prüfen, Parameter optimieren, Bots zurücktesten und laufende Bots überwachen — auf Basis von Binance-Live-Kursdaten.</p>
+  </div>
+  <nav class="tabs">
+    <button class="tab-btn" data-tab="scanner">Coin Scanner</button>
+    <button class="tab-btn active" data-tab="analyse">Analyse &amp; Optimierung</button>
+    <button class="tab-btn" data-tab="backtest">Backtest</button>
+    <button class="tab-btn" data-tab="monitor">Bot-Monitoring</button>
+  </nav>
+</header>
+
+<main class="container">
+
+  <!-- ================= TAB 0: COIN SCANNER ================= -->
+  <section id="panel-scanner" class="panel hidden">
+
+    <div class="card">
+      <h3>Coin Scanner (USDT-Paare)</h3>
+      <div class="scan-filters">
+        <label>
+          Suche
+          <input id="sc-search" type="text" placeholder="z. B. SOL">
+        </label>
+        <label>
+          Min. 24h-Volumen (USDT)
+          <input id="sc-minVol" type="number" min="0" step="100000" value="1000000">
+        </label>
+        <label>
+          Einstufung
+          <select id="sc-class">
+            <option value="">Alle</option>
+            <option value="good">Gut geeignet</option>
+            <option value="warn">Bedingt geeignet</option>
+            <option value="bad">Ungeeignet</option>
+            <option value="none">Noch nicht bewertet</option>
+          </select>
+        </label>
+      </div>
+      <div class="actions">
+        <button id="sc-scanBtn" type="button" disabled>Alle bewerten</button>
+        <button id="sc-minInvBtn" type="button" class="secondary" disabled>Mindestinvest für gut geeignete Coins berechnen</button>
+        <button id="sc-stopBtn" type="button" class="secondary hidden">Abbrechen</button>
+        <span class="status" id="sc-status">Lade Marktdaten …</span>
+      </div>
+      <p class="note">Bewertet werden alle angezeigten Coins ab dem Mindestvolumen (Stablecoins ausgeblendet). Klick auf eine Spaltenüberschrift sortiert, Klick auf „Analysieren“ öffnet die Eignungsprüfung.</p>
+    </div>
+
+    <div class="card">
+      <div class="scan-wrap">
+        <table class="scan-table">
+          <thead>
+            <tr>
+              <th data-sort="base">Coin</th>
+              <th data-sort="price" class="num">Kurs</th>
+              <th data-sort="change" class="num">24h</th>
+              <th data-sort="volume" class="num">Volumen 24h</th>
+              <th data-sort="score" class="num">Score</th>
+              <th data-sort="cls">Einstufung</th>
+              <th data-sort="adx" class="num" title="ADX(14) Tagesbasis: &lt;20 seitwärts, &gt;25 Trend">ADX</th>
+              <th data-sort="chop" class="num" title="Choppiness Index(14) Tagesbasis: &gt;61.8 seitwärts, &lt;38.2 Trend">CHOP</th>
+              <th data-sort="er" class="num" title="Kaufman Efficiency Ratio (30 Tage): nahe 0 = Zickzack, &gt;0.3–0.4 = gerichteter Trend">ER</th>
+              <th data-sort="atrPct" class="num" title="Durchschnittliche Tagesschwankung (ATR 14) in % vom Kurs">ATR%</th>
+              <th data-sort="gridProfit" class="num" title="Realisierter Grid-Gewinn einer Simulation über 83 Tage (Range = Support/Resistance, ~2% Grid-Abstand)">Grid-Sim</th>
+              <th data-sort="minInvest" class="num" title="Empfohlener Mindestinvest aus der Startempfehlung (wie im Tab Analyse &amp; Optimierung). Bei „Gut geeignet“ automatisch berechnet, sonst per Klick.">Mindestinvest</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="sc-list"></tbody>
+        </table>
+      </div>
+      <p class="note" id="sc-count"></p>
+    </div>
+
+    <details class="card collapsible">
+      <summary><h3>So wird bewertet</h3></summary>
+      <table class="details">
+        <tr><td>Trendstärke – ADX(14), Tage (25 P.)</td><td>&lt;20 seitwärts = voll, 20–25 neutral, &gt;25 Trend, ab 40 = 0</td></tr>
+        <tr><td>Zickzack – Choppiness Index(14) (15 P.)</td><td>≥61.8 = voll, ≤38.2 = 0</td></tr>
+        <tr><td>Richtungseffizienz – Efficiency Ratio 30 T. (15 P.)</td><td>≤0.1 = voll, ≥0.4 = 0</td></tr>
+        <tr><td>Bewegung – ATR% pro Tag (15 P.)</td><td>2–8% = voll (Grid-Abstand 0.7–2% wird täglich gekreuzt), &lt;1% = 0, &gt;8% abnehmend (Ausbruchsrisiko)</td></tr>
+        <tr><td>Grid-Simulation 83 Tage (20 P.)</td><td>Realisierter Grid-Gewinn 0% = 0, ≥15% = voll</td></tr>
+        <tr><td>Liquidität – 24h-Volumen (10 P.)</td><td>1 Mio = 0, ≥100 Mio = voll (logarithmisch)</td></tr>
+        <tr><td>Einstufung</td><td>≥65 Gut geeignet, 45–64 Bedingt, &lt;45 Ungeeignet. Fällt die Eignungsprüfung (83-Tage-Trend) negativ aus, höchstens „Bedingt“.</td></tr>
+      </table>
+      <p class="note">Schwellen für ADX, CHOP und ER sind die in der Literatur üblichen Standardwerte; ATR%-, Grid-Sim- und Volumen-Stufen sind eigene Kalibrierungen (Quellen nennen dafür keine festen Zahlen). Keine Anlageberatung.</p>
+    </details>
+
+  </section>
+
+  <!-- ================= TAB 1: ANALYSE & OPTIMIERUNG ================= -->
+  <section id="panel-analyse" class="panel">
+
+    <div class="card">
+      <div class="grid-2">
+        <label>
+          Quote-Asset
+          <select id="an-quote"></select>
+        </label>
+        <label>
+          Währungspaar
+          <select id="an-pair">
+            <option value="">Lade Paare …</option>
+          </select>
+        </label>
+      </div>
+      <div class="row">
+        <button id="an-checkBtn" disabled>Eignung prüfen</button>
+        <span class="status" id="an-loadStatus">Lade Handelspaare …</span>
+      </div>
+    </div>
+
+    <div class="card hidden" id="an-verdictCard">
+      <div id="an-verdictBox"></div>
+      <div class="metrics" id="an-metricsBox"></div>
+      <div id="an-recBox"></div>
+      <div class="btn-row">
+        <button class="secondary" id="an-abortBtn">Abbrechen</button>
+        <button id="an-continueBtn">Weiter zur Optimierung</button>
+        <button class="secondary" id="an-backtestBtn">Backtesting</button>
+        <button class="secondary" id="an-monitorBtn">Ins Bot-Monitoring übernehmen</button>
+      </div>
+    </div>
+
+    <div class="card hidden" id="an-optCard">
+      <h3>Parameter-Optimierung</h3>
+      <label for="an-fromDate">Daten verwenden ab (optional, leer = genug Historie; Uhrzeit optional)</label>
+      <div class="dt-row">
+        <input type="date" id="an-fromDate">
+        <input type="time" id="an-fromTime" title="Uhrzeit (optional)">
+      </div>
+
+      <div class="toggle-row"><input type="checkbox" id="an-slToggle"><label for="an-slToggle">Stop-Loss optimieren</label></div>
+      <div class="toggle-row"><input type="checkbox" id="an-tpToggle"><label for="an-tpToggle">Take-Profit optimieren</label></div>
+
+      <div class="row">
+        <button id="an-optimizeBtn">Optimieren</button>
+        <span class="status" id="an-optStatus"></span>
+      </div>
+    </div>
+
+    <div class="card hidden" id="an-resultCard">
+      <h3>Optimale Parameter</h3>
+      <div id="an-resultBox"></div>
+      <div class="row" style="margin-top:14px">
+        <button id="an-toMonitorBtn" class="secondary">Als Bot ins Monitoring übernehmen</button>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ================= TAB 2: BACKTEST ================= -->
+  <section id="panel-backtest" class="panel hidden">
+
+    <form id="bt-form" class="card">
+      <div class="grid-2">
+        <label>
+          Quote-Asset
+          <select id="bt-quote" required></select>
+        </label>
+        <label>
+          Währungspaar
+          <select id="bt-symbol" required>
+            <option value="">Lade Paare …</option>
+          </select>
+        </label>
+        <label>
+          Untere Preisgrenze
+          <input id="bt-lower" type="text" required>
+        </label>
+        <label>
+          Obere Preisgrenze
+          <input id="bt-upper" type="text" required>
+        </label>
+        <label>
+          Anzahl Grids
+          <input id="bt-grids" type="number" min="2" max="500" step="1" value="20" required>
+        </label>
+        <label>
+          Grid-Modus
+          <select id="bt-mode">
+            <option value="geometric">Geometrisch</option>
+            <option value="arithmetic">Arithmetisch</option>
+          </select>
+        </label>
+        <label>
+          Investment (Quote)
+          <input id="bt-investment" type="number" step="any" min="1" value="100" required>
+        </label>
+        <label>
+          Backtest ab (Startdatum, Uhrzeit optional)
+          <span class="dt-row">
+            <input id="bt-start" type="date" required>
+            <input id="bt-startTime" type="time" title="Uhrzeit (optional)">
+          </span>
+        </label>
+        <label>
+          Stop-Loss (Preis, optional)
+          <input id="bt-sl" type="text" placeholder="leer = kein Stop-Loss">
+        </label>
+        <label>
+          Take-Profit (Preis, optional)
+          <input id="bt-tp" type="text" placeholder="leer = kein Take-Profit">
+        </label>
+        <label>
+          Aktueller Preis
+          <input id="bt-price" type="text" readonly placeholder="–">
+        </label>
+      </div>
+      <div class="actions">
+        <button id="bt-run" type="submit">Backtesting starten</button>
+        <span id="bt-status" class="status"></span>
+      </div>
+      <p id="bt-error" class="error" hidden></p>
+    </form>
+
+    <section id="bt-results" class="card hidden">
+      <h2>Auswertung</h2>
+      <p id="bt-summary" class="summary"></p>
+
+      <canvas id="bt-chart" width="900" height="300"></canvas>
+
+      <div class="kpis">
+        <div class="kpi kpi-main">
+          <span class="kpi-label">Gesamtgewinn</span>
+          <span class="kpi-value" id="bt-r-total"></span>
+          <span class="kpi-sub" id="bt-r-total-pct"></span>
+        </div>
+      </div>
+
+      <h3>Woher kommt der Gewinn?</h3>
+      <div class="kpis kpi-split">
+        <div class="kpi kpi-market">
+          <span class="kpi-label">Durch Kursbewegung</span>
+          <span class="kpi-value" id="bt-r-market"></span>
+          <span class="kpi-sub" id="bt-r-market-sub"></span>
+        </div>
+        <div class="kpi kpi-grid">
+          <span class="kpi-label">Durch Grid-Trading</span>
+          <span class="kpi-value" id="bt-r-grid"></span>
+          <span class="kpi-sub" id="bt-r-grid-sub"></span>
+        </div>
+      </div>
+
+      <div class="kpis">
+        <div class="kpi">
+          <span class="kpi-label">Abgeschlossene Trades</span>
+          <span class="kpi-value" id="bt-r-trades"></span>
+          <span class="kpi-sub" id="bt-r-trades-sub"></span>
+        </div>
+        <div class="kpi">
+          <span class="kpi-label">Grid-Gewinn (realisiert)</span>
+          <span class="kpi-value" id="bt-r-realized"></span>
+        </div>
+        <div class="kpi">
+          <span class="kpi-label">Unrealisiert</span>
+          <span class="kpi-value" id="bt-r-unrealized"></span>
+        </div>
+        <div class="kpi">
+          <span class="kpi-label">Gebühren gesamt</span>
+          <span class="kpi-value" id="bt-r-fees"></span>
+        </div>
+        <div class="kpi">
+          <span class="kpi-label">Ø Gewinn / Tag</span>
+          <span class="kpi-value" id="bt-r-perday"></span>
+        </div>
+        <div class="kpi">
+          <span class="kpi-label">Grid vs. Buy &amp; Hold</span>
+          <span class="kpi-value" id="bt-r-vshodl"></span>
+          <span class="kpi-sub" id="bt-r-vshodl-sub"></span>
+        </div>
+      </div>
+
+      <h3>Gewinnverlauf</h3>
+      <canvas id="bt-profitChart" width="900" height="300"></canvas>
+
+      <table class="details">
+        <tbody id="bt-details"></tbody>
+      </table>
+
+      <h3>Trend</h3>
+      <div class="trend">
+        <div class="trend-box">
+          <span class="kpi-label">Rückblick (Backtest-Zeitraum)</span>
+          <span class="kpi-value" id="bt-t-past"></span>
+          <span class="kpi-sub" id="bt-t-past-sub"></span>
+        </div>
+        <div class="trend-box">
+          <span class="kpi-label" id="bt-t-future-label">Ausblick</span>
+          <span class="kpi-value" id="bt-t-future"></span>
+          <span class="kpi-sub" id="bt-t-future-sub"></span>
+        </div>
+      </div>
+      <table class="details">
+        <tbody id="bt-t-signals"></tbody>
+      </table>
+      <p class="note">Ausblick = statistische Fortschreibung (Regression, gleitende Durchschnitte, Momentum) der bisherigen Kursdaten. Keine Prognose, keine Anlageempfehlung.</p>
+    </section>
+
+  </section>
+
+  <!-- ================= TAB 3: BOT-MONITORING ================= -->
+  <section id="panel-monitor" class="panel hidden">
+
+    <details class="card collapsible" id="mo-addBox">
+      <summary><h3 id="mo-addTitle">Bot hinterlegen</h3></summary>
+      <div class="grid-2">
+        <label>
+          Quote-Asset
+          <select id="mo-quote"></select>
+        </label>
+        <label>
+          Währungspaar
+          <select id="mo-symbol">
+            <option value="">Lade Paare …</option>
+          </select>
+        </label>
+        <label>
+          Anzahl Grids
+          <input id="mo-grids" type="number" min="2" max="500" step="1" value="20">
+        </label>
+        <label>
+          Grid-Modus
+          <select id="mo-mode">
+            <option value="">Bitte wählen …</option>
+            <option value="geometric">Geometrisch</option>
+            <option value="arithmetic">Arithmetisch</option>
+          </select>
+        </label>
+        <label>
+          Investment (<span id="mo-investUnit">USDT</span>)
+          <input id="mo-investment" type="text" placeholder="z. B. 100">
+        </label>
+        <label>
+          Untere Grenze
+          <input id="mo-lower" type="text">
+        </label>
+        <label>
+          Obere Grenze
+          <input id="mo-upper" type="text">
+        </label>
+        <label>
+          Startkurs
+          <input id="mo-startPrice" type="text">
+        </label>
+        <label>
+          Stop-Loss (optional)
+          <input id="mo-sl" type="text" placeholder="leer = kein Stop-Loss">
+        </label>
+        <label>
+          Take-Profit (optional)
+          <input id="mo-tp" type="text" placeholder="leer = kein Take-Profit">
+        </label>
+        <label>
+          Startdatum (Uhrzeit optional)
+          <span class="dt-row">
+            <input id="mo-startDate" type="date">
+            <input id="mo-startTime" type="time" title="Uhrzeit (optional)">
+          </span>
+        </label>
+      </div>
+      <div class="actions">
+        <button id="mo-addBtn" type="button">Bot hinzufügen</button>
+        <button id="mo-cancelEditBtn" type="button" class="secondary hidden">Abbrechen</button>
+        <span class="status" id="mo-addStatus"></span>
+      </div>
+    </details>
+
+    <details class="card collapsible" id="eq-box">
+      <summary><h3>Equity</h3><span class="eq-summary-val" id="eq-summary"></span></summary>
+      <div class="eq-start">
+        <label>
+          Startkapital (USDT)
+          <input id="eq-startInput" type="text" placeholder="z. B. 500">
+        </label>
+        <button id="eq-startBtn" type="button" class="secondary">Übernehmen</button>
+        <span class="status" id="eq-startStatus"></span>
+      </div>
+      <div class="kpis">
+        <div class="kpi">
+          <span class="kpi-label">Aktuelles Kapital</span>
+          <span class="kpi-value" id="eq-now"></span>
+          <span class="kpi-sub" id="eq-now-sub"></span>
+        </div>
+        <div class="kpi">
+          <span class="kpi-label">Gewinn / Verlust gesamt</span>
+          <span class="kpi-value" id="eq-pnl"></span>
+          <span class="kpi-sub" id="eq-pnl-sub"></span>
+        </div>
+        <div class="kpi">
+          <span class="kpi-label">Beendete Bots</span>
+          <span class="kpi-value" id="eq-count"></span>
+          <span class="kpi-sub" id="eq-count-sub"></span>
+        </div>
+      </div>
+      <h3>Kapitalverlauf</h3>
+      <div class="eq-chart-wrap">
+        <canvas id="eq-chart" width="900" height="240"></canvas>
+        <div class="eq-tip" id="eq-tip"></div>
+      </div>
+      <p class="eq-skip hidden" id="eq-skip"></p>
+    </details>
+
+    <div class="card">
+      <h3>Hinterlegte Bots</h3>
+      <p class="status" id="mo-storeStatus"></p>
+      <table class="details" id="mo-table">
+        <thead>
+          <tr><th>Paar</th><th>Grids</th><th>Range</th><th>Startkurs</th><th>Startdatum</th><th>Investment</th><th>Notiz</th><th></th></tr>
+        </thead>
+        <tbody id="mo-list"></tbody>
+      </table>
+      <p class="note" id="mo-emptyNote">Noch keine Bots hinterlegt.</p>
+      <div class="actions">
+        <button id="mo-checkAllBtn" type="button">Alle Bots prüfen</button>
+        <span class="status" id="mo-checkStatus"></span>
+      </div>
+    </div>
+
+    <div id="mo-results"></div>
+
+    <details class="card removed-card" id="mo-removedBox">
+      <summary><h3>Entfernte Bots <span class="status" id="mo-removedCount"></span></h3></summary>
+      <div class="rm-scroll" id="mo-removedTable">
+        <table class="details">
+          <thead>
+            <tr><th>Paar</th><th>Grids</th><th>Range</th><th>Startdatum</th><th>Gestoppt am</th><th>Gewinn / Verlust</th><th>Trades</th><th>Kapital danach</th><th>Eignung</th><th>Notizen</th><th></th></tr>
+          </thead>
+          <tbody id="mo-removedList"></tbody>
+        </table>
+      </div>
+      <p class="note" id="mo-removedEmpty">Noch keine Bots entfernt.</p>
+    </details>
+
+    <dialog id="mo-stopDialog" class="note-dialog">
+      <form method="dialog" id="mo-stopForm">
+        <h3 id="mo-stopTitle">Bot stoppen</h3>
+        <p class="note" style="margin:0 0 12px">Der Bot wird unter „Entfernte Bots“ abgelegt. Alle Felder sind Pflichtfelder.</p>
+        <label>Ergebnis</label>
+        <div class="pnl-choice">
+          <label class="pnl-opt gain"><input type="radio" name="mo-pnlSign" value="1"> Gewinn</label>
+          <label class="pnl-opt loss"><input type="radio" name="mo-pnlSign" value="-1"> Verlust</label>
+        </div>
+        <label>
+          Betrag (<span id="mo-stopUnit">USDT</span>)
+          <input id="mo-stopAmount" type="text" placeholder="z. B. 4,20" autocomplete="off">
+        </label>
+        <label>
+          Anzahl Trades
+          <input id="mo-stopTrades" type="number" min="0" step="1" inputmode="numeric" placeholder="z. B. 12" autocomplete="off">
+        </label>
+        <label>
+          Notiz: Warum wird der Bot gestoppt?
+          <textarea id="mo-stopNote" rows="5"></textarea>
+        </label>
+        <p class="error hidden" id="mo-stopError" style="margin:0 0 10px"></p>
+        <div class="actions">
+          <button type="submit" class="danger small" id="mo-stopSave">Bot stoppen</button>
+          <button type="button" class="secondary small" id="mo-stopCancel">Abbrechen</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="mo-whyDialog" class="note-dialog why-dialog">
+      <div class="why-dialog-head">
+        <h3 id="mo-whyTitle">Beurteilung</h3>
+        <button type="button" class="secondary small" id="mo-whyClose">Schliessen</button>
+      </div>
+      <div id="mo-whyBody"></div>
+    </dialog>
+
+    <dialog id="mo-noteDialog" class="note-dialog">
+      <form method="dialog" id="mo-noteForm">
+        <h3 id="mo-noteTitle">Notiz</h3>
+        <p class="note" id="mo-noteHint" style="margin:0 0 10px"></p>
+        <textarea id="mo-noteText" rows="6"></textarea>
+        <p class="error hidden" id="mo-noteError" style="margin:0 0 10px"></p>
+        <div class="actions">
+          <button type="submit" id="mo-noteSave" value="save">Speichern</button>
+          <button type="button" class="secondary" id="mo-noteCancel">Abbrechen</button>
+        </div>
+      </form>
+    </dialog>
+
+  </section>
+
+</main>
+<!-- Einstufungs-Modal ausserhalb der Tabs, damit es auch aus "Analyse & Optimierung" geoeffnet werden kann -->
+  <dialog id="sc-whyDialog" class="note-dialog why-dialog">
+    <div class="why-dialog-head">
+      <h3 id="sc-whyTitle">Einstufung</h3>
+      <button type="button" class="secondary small" id="sc-whyClose">Schliessen</button>
+    </div>
+    <div id="sc-whyBody"></div>
+  </dialog>
+<script src="app.js?v=2026-10-04-8"></script>
+</body>
+</html>

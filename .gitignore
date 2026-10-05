@@ -1,0 +1,9 @@
+# Persönliche Daten – nicht ins öffentliche Repo
+data/
+Versuche mit Empfohlenen Tokens als Gridbots.txt
+
+# Lokal/Tooling
+__pycache__/
+.claude/
+launch.json
+DesignMockups/
