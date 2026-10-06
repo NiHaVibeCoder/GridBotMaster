@@ -35,6 +35,9 @@ const STATIC_EN = {
   'Alle bewerten': 'Rate all',
   'Mindestinvest für gut geeignete Coins berechnen': 'Calculate minimum investment for well-suited coins',
   'Abbrechen': 'Cancel',
+  'Fortfahren': 'Continue',
+  'Mindestinvest berechnen': 'Calculate minimum investment',
+  'Während der Berechnung reagiert die Seite etwas verzögert. Abbruch jederzeit möglich.': 'The page responds a little slower during the calculation. You can cancel at any time.',
   'Lade Marktdaten …': 'Loading market data …',
   'Bewertet werden alle angezeigten Coins ab dem Mindestvolumen (Stablecoins ausgeblendet). Klick auf eine Spaltenüberschrift sortiert, Klick auf „Analysieren“ öffnet die Eignungsprüfung.': 'All displayed coins above the minimum volume are rated (stablecoins hidden). Click a column header to sort, click “Analyse” to open the suitability check.',
   'Kurs': 'Price',
@@ -1644,12 +1647,42 @@ function btRenderResults(r, ctx) {
   $('bt-results').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
+// Canvas scharf in CSS-Pixeln zeichnen: interne Grösse = Anzeigebreite × devicePixelRatio.
+// Die Höhe folgt dem Seitenverhältnis aus dem HTML (width/height), auf schmalen Bildschirmen mind. 220 px,
+// damit Schrift und Linien auf dem Handy nicht winzig skaliert werden.
+const canvasBase = new Map(), canvasRedraw = new Map();
+function fitCanvas(c) {
+  if (!canvasBase.has(c)) canvasBase.set(c, { w: c.width, h: c.height });
+  const base = canvasBase.get(c);
+  const W = Math.round(c.clientWidth) || base.w;
+  const H = Math.max(220, Math.round(W * base.h / base.w));
+  const dpr = window.devicePixelRatio || 1;
+  c.width = Math.round(W * dpr);
+  c.height = Math.round(H * dpr);
+  c.style.height = H + (c.offsetWidth - c.clientWidth) + 'px'; // + Rahmen (border-box)
+  c.drawnW = W;
+  const ctx = c.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, W, H };
+}
+// Neu zeichnen, sobald sich die Anzeigebreite ändert (Drehen, Fenstergrösse, Tab/Details wieder sichtbar)
+const canvasObserver = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver((entries) => {
+  for (const e of entries) {
+    const c = e.target, w = Math.round(c.clientWidth);
+    if (w && w !== c.drawnW && canvasRedraw.has(c)) requestAnimationFrame(() => canvasRedraw.get(c)());
+  }
+});
+function setCanvasRedraw(c, fn) {
+  if (!canvasRedraw.has(c) && canvasObserver) canvasObserver.observe(c);
+  canvasRedraw.set(c, fn);
+}
+
 // stopLoss/takeProfit (optional): als gestrichelte Linien eingezeichnet
 function btDrawChart(candles, levels, lower, upper, stopLoss = null, takeProfit = null) {
   const c = $('bt-chart');
-  const ctx = c.getContext('2d');
-  const W = c.width, H = c.height, pad = { l: 70, r: 12, t: 12, b: 24 };
-  ctx.clearRect(0, 0, W, H);
+  setCanvasRedraw(c, () => btDrawChart(candles, levels, lower, upper, stopLoss, takeProfit));
+  const { ctx, W, H } = fitCanvas(c);
+  const pad = { l: 70, r: 12, t: 12, b: 24 };
 
   const closes = candles.map((k) => k.c);
   let min = lower, max = upper;
@@ -1715,9 +1748,9 @@ function btDrawChart(candles, levels, lower, upper, stopLoss = null, takeProfit 
 // Gewinnverlauf des Grid-Bots in % des Investments
 function btDrawProfitChart(curve) {
   const c = $('bt-profitChart');
-  const ctx = c.getContext('2d');
-  const W = c.width, H = c.height, pad = { l: 70, r: 12, t: 14, b: 24 };
-  ctx.clearRect(0, 0, W, H);
+  setCanvasRedraw(c, () => btDrawProfitChart(curve));
+  const { ctx, W, H } = fitCanvas(c);
+  const pad = { l: 70, r: 12, t: 14, b: 24 };
   if (curve.length < 2) return;
 
   let min = 0, max = 0;
@@ -2320,10 +2353,12 @@ function renderEquity(eq = eqCompute()) {
 }
 
 // Stufenkurve des Kapitals über echte Zeitachse; ohne Startkapital Verlauf der G/V-Summe ab 0
-function eqDrawChart({ start, steps }) {
-  const c = $('eq-chart'), ctx = c.getContext('2d');
-  const W = c.width, H = c.height, pad = { l: 70, r: 16, t: 14, b: 24 };
-  ctx.clearRect(0, 0, W, H);
+function eqDrawChart(eq) {
+  const { start, steps } = eq;
+  const c = $('eq-chart');
+  setCanvasRedraw(c, () => eqDrawChart(eq));
+  const { ctx, W, H } = fitCanvas(c);
+  const pad = { l: 70, r: 16, t: 14, b: 24 };
   const base = start || 0;
   const pts0 = steps.map((s) => ({ label: s.symbol, date: s.removedAt, t: new Date(s.removedAt).getTime(), value: s.after, pnl: s.pnl }));
   // Zeitachse vom ersten bis zum letzten Stopp; Startpunkt kurz vor dem ersten Stopp
@@ -2356,7 +2391,8 @@ function eqDrawChart({ start, steps }) {
   // Datumsachse: runde Abstände (Tage/Wochen bzw. Monatsanfänge), ca. 6 Beschriftungen
   const days = (t1 - t0) / EQ_DAY;
   const ticks = [];
-  const dStep = [1, 2, 7, 14].find((d) => days / d <= 7);
+  const maxTicks = W < 500 ? 4 : 7;
+  const dStep = [1, 2, 7, 14].find((d) => days / d <= maxTicks);
   const d = new Date(t0);
   d.setHours(0, 0, 0, 0);
   if (dStep) {
@@ -2364,7 +2400,7 @@ function eqDrawChart({ start, steps }) {
       ticks.push([d.getTime(), d.toLocaleDateString(DATE_LOCALE, { day: '2-digit', month: '2-digit' })]);
     }
   } else {
-    const mStep = [1, 2, 3, 6, 12].find((k) => days / 30.4 / k <= 7) || 12;
+    const mStep = [1, 2, 3, 6, 12].find((k) => days / 30.4 / k <= maxTicks) || 12;
     d.setDate(1);
     for (d.setMonth(d.getMonth() + 1); d.getTime() <= t1; d.setMonth(d.getMonth() + mStep)) {
       ticks.push([d.getTime(), d.toLocaleDateString(DATE_LOCALE, { month: 'short', year: '2-digit' })]);
@@ -2408,23 +2444,27 @@ function eqDrawChart({ start, steps }) {
 }
 
 function eqShowTip(ev) {
-  const c = $('eq-chart'), r = c.getBoundingClientRect(), sx = c.width / r.width;
-  const mx = (ev.clientX - r.left) * sx;
+  const c = $('eq-chart'), r = c.getBoundingClientRect();
+  const mx = ev.clientX - r.left;
   let best = null, bd = Infinity;
   for (const p of eqChartPts) { const dist = Math.abs(p.px - mx); if (dist < bd) { bd = dist; best = p; } }
   const tip = $('eq-tip');
-  if (!best || bd > 40 * sx) { tip.style.display = 'none'; return; }
+  if (!best || bd > 40) { tip.style.display = 'none'; return; }
   tip.innerHTML = best.pnl == null
     ? `<div class="k">${best.label}</div>${moFmtAmount(best.value)} ${EQ_QUOTE}`
     : `<div class="k">${moFmtDateTime(best.date)} · ${escapeHtml(best.label)}</div><span class="${eqCls(best.pnl)}">${eqSigned(best.pnl)} ${EQ_QUOTE}</span> → ${moFmtAmount(best.value)} ${EQ_QUOTE}`;
   tip.style.display = 'block';
-  tip.style.left = Math.min(Math.max(0, best.px / sx - tip.offsetWidth / 2), r.width - tip.offsetWidth) + 'px';
-  tip.style.top = Math.max(0, best.py / sx - tip.offsetHeight - 12) + 'px';
+  tip.style.left = Math.max(0, Math.min(best.px - tip.offsetWidth / 2, r.width - tip.offsetWidth)) + 'px';
+  tip.style.top = Math.max(0, best.py - tip.offsetHeight - 12) + 'px';
 }
 
 function initEquity() {
-  $('eq-chart').addEventListener('mousemove', eqShowTip);
-  $('eq-chart').addEventListener('mouseleave', () => { $('eq-tip').style.display = 'none'; });
+  // Pointer-Events: Maus (Hover) und Touch (Tippen/Ziehen) gleichermassen
+  $('eq-chart').addEventListener('pointermove', eqShowTip);
+  $('eq-chart').addEventListener('pointerdown', eqShowTip);
+  $('eq-chart').addEventListener('pointerleave', (ev) => { if (ev.pointerType === 'mouse') $('eq-tip').style.display = 'none'; });
+  // Auf Touch-Geräten bleibt der Tooltip stehen, bis ausserhalb des Charts getippt wird
+  document.addEventListener('pointerdown', (ev) => { if (ev.target !== $('eq-chart')) $('eq-tip').style.display = 'none'; });
   $('eq-startBtn').addEventListener('click', () => {
     const v = parseNum($('eq-startInput').value);
     if (!(v > 0)) { $('eq-startStatus').textContent = L('Bitte Betrag grösser als 0 eingeben.', 'Please enter an amount greater than 0.'); return; }
@@ -2770,10 +2810,10 @@ function wyCritTable(r, rStart = null) {
       : c.lost >= 0.05 ? `<span class="wy-lost">−${wyNf(c.lost, 1)}</span>` : '';
     return `<tr>
       <td><div class="wy-cname">${c.name} <span class="wy-cq">· ${c.tech}</span></div><div class="wy-cq">${c.q}</div><div class="wy-cfact">${c.fact}</div></td>
-      ${s ? `<td class="wy-num wy-muted">${s.value}</td>` : ''}
-      <td class="wy-num"><b>${c.value}</b></td>
-      <td class="wy-num wy-muted">${c.ideal}</td>
-      <td class="wy-num">${wyNf(c.pts, 1)} / ${c.max}<span class="wy-mini"><span class="s-${c.st}" style="width:${c.pts / c.max * 100}%"></span></span>${change}</td>
+      ${s ? `<td class="wy-num wy-muted" data-label="Start">${s.value}</td>` : ''}
+      <td class="wy-num" data-label="${s ? L('Jetzt', 'Now') : L('Messwert', 'Value')}"><b>${c.value}</b></td>
+      <td class="wy-num wy-muted" data-label="Ideal">${c.ideal}</td>
+      <td class="wy-num" data-label="${L('Punkte', 'Points')}">${wyNf(c.pts, 1)} / ${c.max}<span class="wy-mini"><span class="s-${c.st}" style="width:${c.pts / c.max * 100}%"></span></span>${change}</td>
       <td>${wyState(c.st)}</td>
     </tr>`;
   }).join('');
@@ -2816,7 +2856,11 @@ const wyFacts = (items) => `<div class="wy-facts">${items.map(([v, l, col]) => `
 function wyLineChart(el, { series, t0, dt, fmt, hlines = [], band = null, trend = false, lastColor = 'var(--accent)', note = '' }) {
   const svg = el.querySelector('svg');
   const tip = el.querySelector('.wy-tip');
-  const W = 720, H = 210, L = 8, R = 150, T = 12, B = 22;
+  // viewBox an die Anzeigebreite anpassen, damit die Schrift auf dem Handy nicht mitschrumpft.
+  // Schmal: Linienbeschriftungen im Chart statt in eigener Spalte rechts, Hinweis in eigener Zeile unten.
+  const W = Math.max(280, Math.min(720, Math.round(el.clientWidth - 20) || 720));
+  const narrow = W < 520;
+  const H = narrow ? 230 : 210, L = 8, R = narrow ? 8 : 150, T = 12, B = narrow ? 38 : 22;
   const n = series.length;
   const vals = [...series, ...hlines.map((h) => h.v), ...(band ? [band.lo, band.hi] : [])];
   let min = Math.min(...vals), max = Math.max(...vals);
@@ -2832,19 +2876,21 @@ function wyLineChart(el, { series, t0, dt, fmt, hlines = [], band = null, trend 
   svg.innerHTML = `
     ${band ? `<rect x="${L}" width="${W - L - R}" y="${y(band.hi)}" height="${Math.max(0, y(band.lo) - y(band.hi))}" fill="rgba(79,157,255,.10)"/>` : ''}
     ${labs.map((h) => `<line x1="${L}" x2="${W - R}" y1="${y(h.v)}" y2="${y(h.v)}" stroke="${h.color || '#3a424d'}" stroke-dasharray="${h.dash || '3 4'}"/>
-      <text x="${W - R + 6}" y="${h.ly + 4}" fill="${h.tcolor || '#9aa3af'}" font-size="11">${h.label} ${fmt(h.v)}</text>`).join('')}
+      ${narrow
+        ? `<text x="${W - R - 2}" y="${h.ly - 4}" fill="${h.tcolor || '#9aa3af'}" font-size="11" text-anchor="end" stroke="#12161b" stroke-width="3" paint-order="stroke">${h.label} ${fmt(h.v)}</text>`
+        : `<text x="${W - R + 6}" y="${h.ly + 4}" fill="${h.tcolor || '#9aa3af'}" font-size="11">${h.label} ${fmt(h.v)}</text>`}`).join('')}
     ${trend ? `<line x1="${x(0)}" x2="${x(n - 1)}" y1="${y(series[0])}" y2="${y(series[n - 1])}" stroke="${series[n - 1] >= series[0] ? 'var(--good)' : 'var(--bad)'}" stroke-width="1.5" stroke-dasharray="6 4" opacity=".7"/>` : ''}
     <path d="${path}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>
     <circle cx="${x(0)}" cy="${y(series[0])}" r="4" fill="var(--accent)" stroke="#12161b" stroke-width="2"/>
     <circle cx="${x(n - 1)}" cy="${y(series[n - 1])}" r="5" fill="${lastColor}" stroke="#12161b" stroke-width="2"/>
-    <text x="${L}" y="${H - 5}" fill="#9aa3af" font-size="11">${wyDate(t0)}</text>
-    <text x="${W - R}" y="${H - 5}" fill="#9aa3af" font-size="11" text-anchor="end">${wyDate(t0 + (n - 1) * dt)}</text>
-    <text x="${(W - R) / 2}" y="${H - 5}" fill="#9aa3af" font-size="11" text-anchor="middle">${note}</text>
+    <text x="${L}" y="${H - (narrow ? 22 : 5)}" fill="#9aa3af" font-size="11">${wyDate(t0)}</text>
+    <text x="${W - R}" y="${H - (narrow ? 22 : 5)}" fill="#9aa3af" font-size="11" text-anchor="end">${wyDate(t0 + (n - 1) * dt)}</text>
+    <text x="${narrow ? W / 2 : (W - R) / 2}" y="${H - 5}" fill="#9aa3af" font-size="11" text-anchor="middle">${note}</text>
     <line class="xh" y1="${T}" y2="${H - B}" stroke="#9aa3af" visibility="hidden"/>
     <circle class="xd" r="4" fill="var(--accent)" stroke="#12161b" stroke-width="2" visibility="hidden"/>
     <rect class="hit" x="${L}" y="0" width="${W - L - R}" height="${H}" fill="transparent"/>`;
   const xh = svg.querySelector('.xh'), xd = svg.querySelector('.xd'), hit = svg.querySelector('.hit');
-  hit.addEventListener('mousemove', (ev) => {
+  const show = (ev) => {
     const rc = svg.getBoundingClientRect();
     const sx = (ev.clientX - rc.left) / rc.width * W;
     const i = Math.max(0, Math.min(n - 1, Math.round((sx - L) / (W - L - R) * (n - 1))));
@@ -2855,13 +2901,26 @@ function wyLineChart(el, { series, t0, dt, fmt, hlines = [], band = null, trend 
     tip.innerHTML = `${wyDate(t)}${dt < 864e5 ? ' ' + t.toLocaleTimeString(DATE_LOCALE, { hour: '2-digit', minute: '2-digit' }) : ''} · <b>${fmt(series[i])}</b>`;
     tip.style.left = Math.max(0, Math.min(x(i) / W * rc.width + 10, rc.width - tip.offsetWidth - 4)) + 'px';
     tip.style.top = (y(series[i]) / H * rc.height - 30) + 'px';
-  });
-  hit.addEventListener('mouseleave', () => {
+  };
+  const hide = () => {
     tip.style.display = 'none';
     xh.setAttribute('visibility', 'hidden');
     xd.setAttribute('visibility', 'hidden');
-  });
+  };
+  // Pointer-Events: Hover mit der Maus, Tippen/Ziehen auf Touch-Geräten
+  hit.addEventListener('pointermove', show);
+  hit.addEventListener('pointerdown', show);
+  hit.addEventListener('pointerleave', (ev) => { if (ev.pointerType === 'mouse') hide(); });
 }
+// Touch: Markierung bleibt stehen, bis ausserhalb des Charts getippt wird
+document.addEventListener('pointerdown', (ev) => {
+  document.querySelectorAll('.wy-chart').forEach((el) => {
+    if (el.contains(ev.target)) return;
+    const tip = el.querySelector('.wy-tip');
+    if (tip) tip.style.display = 'none';
+    el.querySelectorAll('.xh, .xd').forEach((m) => m.setAttribute('visibility', 'hidden'));
+  });
+});
 
 // Eignung eines Zeitpunkts für die Anzeige (null, wenn für den Punkte-Score zu wenig Historie da war)
 function moWhyRating(v) {
@@ -3542,11 +3601,22 @@ function scFmtDuration(ms) {
 }
 
 // Tooltip des Buttons "Mindestinvest für gut geeignete Coins berechnen": geschätzte Dauer für die angezeigten Coins
-function scUpdateMinInvTitle() {
+function scMinInvEstimate() {
   const n = scVisibleRows().filter((r) => r.cls === 'good' && r.minInvest == null).length;
-  $('sc-minInvBtn').title = n
+  return { n, text: n
     ? L(`Die Berechnung dauert ca. ${scFmtDuration(n * (scMinInvestMsPerCoin() + 30))} (${n} ${n === 1 ? 'Coin' : 'Coins'} à ca. ${fmt(scMinInvestMsPerCoin() / 1000, 1)} s).`, `The calculation takes approx. ${scFmtDuration(n * (scMinInvestMsPerCoin() + 30))} (${n} ${n === 1 ? 'coin' : 'coins'} at approx. ${fmt(scMinInvestMsPerCoin() / 1000, 1)} s each).`)
-    : L('Keine angezeigten gut geeigneten Coins ohne Mindestinvest.', 'No displayed well-suited coins without a minimum investment.');
+    : L('Keine angezeigten gut geeigneten Coins ohne Mindestinvest.', 'No displayed well-suited coins without a minimum investment.') };
+}
+function scUpdateMinInvTitle() {
+  $('sc-minInvBtn').title = scMinInvEstimate().text;
+}
+
+// Touch-Geräte haben keinen Hover-Tooltip: dort vor dem Start ein Modal mit der geschätzten Dauer zeigen
+function scMinInvClick() {
+  const { n, text } = scMinInvEstimate();
+  if (!n || !window.matchMedia('(hover: none)').matches) { scMinInvestGood(); return; }
+  $('sc-minInvText').textContent = text;
+  $('sc-minInvDialog').showModal();
 }
 
 // Mindestinvest eines Coins über dieselbe Startempfehlung wie im Tab "Analyse & Optimierung" berechnen
@@ -3842,7 +3912,9 @@ function initScannerTab() {
     });
   });
   $('sc-scanBtn').addEventListener('click', scScanAll);
-  $('sc-minInvBtn').addEventListener('click', scMinInvestGood);
+  $('sc-minInvBtn').addEventListener('click', scMinInvClick);
+  $('sc-minInvGo').addEventListener('click', () => { $('sc-minInvDialog').close(); scMinInvestGood(); });
+  $('sc-minInvCancel').addEventListener('click', () => $('sc-minInvDialog').close());
   // Schätzung erst beim Überfahren berechnen: Filter und Werte können sich seit dem letzten Rendern geändert haben
   $('sc-minInvBtn').addEventListener('mouseenter', scUpdateMinInvTitle);
   $('sc-stopBtn').addEventListener('click', () => { scAbort = true; });

@@ -427,10 +427,42 @@ details.wy-how td{padding:4px 6px; border-bottom:1px solid var(--border); vertic
   .eq-start{flex-wrap:wrap;}
   .eq-start label{width:100%;}
   .note-dialog{padding:16px;}
-  .why-dialog-head{flex-wrap:wrap;}
   ol.wy-chain li{grid-template-columns:22px 1fr; }
   ol.wy-chain li > :last-child{grid-column:2;}
 
+  /* Warum-Dialoge: Vollbild, Kopf mit "Schliessen" bleibt beim Scrollen oben */
+  .note-dialog.why-dialog{width:100%; max-width:none; height:100%; max-height:none; margin:0; border:0; border-radius:0; padding:0 12px 20px; overflow-x:hidden;}
+  .why-dialog-head{position:sticky; top:0; z-index:5; margin:0 -12px 14px; padding:12px; background:var(--card); border-bottom:1px solid var(--border); align-items:flex-start;}
+  .why-dialog-head h3{font-size:1.02rem; min-width:0; line-height:1.5;}
+  .why-dialog-head .badge{margin-left:4px; white-space:nowrap;}
+  .why-dialog-head button{flex:none;}
+  .wy-sec{margin-bottom:20px;}
+  .wy-score-big{font-size:1.7rem;}
+  .wy-lead{padding:10px 12px; font-size:.9rem;}
+
+  /* Punkte-Legende: Name und Punkte untereinander in zwei Spalten statt abgeschnitten */
+  .wy-plegend{display:grid; grid-template-columns:1fr 1fr; gap:3px 14px; font-size:.76rem; margin-top:8px;}
+  .wy-plegend.indent{margin-left:0;}
+  .wy-plegend > span{display:flex; gap:6px; align-items:baseline; white-space:normal; text-align:left; overflow:visible;}
+  .wy-plegend > span br{display:none;}
+  .wy-plegend > span b{margin-left:auto; color:var(--text);}
+
+  /* Kriterien-Tabelle: je Kriterium ein Block mit beschrifteten Werten */
+  table.wy-crit thead{display:none;}
+  table.wy-crit, table.wy-crit tbody{display:block;}
+  table.wy-crit tr{display:flex; flex-wrap:wrap; gap:6px 12px; padding:10px 0; border-bottom:1px solid var(--border);}
+  table.wy-crit tr:last-child{border-bottom:none;}
+  table.wy-crit td{padding:0; border:none;}
+  table.wy-crit td:first-child{flex:1 1 100%;}
+  table.wy-crit td.wy-num{flex:1 1 0; min-width:0; text-align:left; white-space:normal;}
+  table.wy-crit td:last-child{flex:none; align-self:flex-end;}
+  table.wy-crit td[data-label]::before{content:attr(data-label); display:block; color:var(--muted); font-size:.7rem; font-weight:400;}
+
+  .wy-gate-row{align-items:flex-start;}
+  .wy-lever{flex-direction:column; gap:2px;}
+  details.wy-how td:first-child{width:38%;}
+  .wy-foot{flex-direction:column; align-items:stretch;}
+  .wy-chart{padding:8px 6px 2px;}
 }
 
 /* Hinterlegte Bots: unter 1200px wird jede Zeile zur Karte (Tablet 2 Spalten, Handy 1 Spalte) */
