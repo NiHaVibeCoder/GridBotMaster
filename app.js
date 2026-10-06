@@ -2442,12 +2442,12 @@ function renderBotList() {
   $('mo-list').innerHTML = bots.map((b) => `
     <tr>
       <td>${pairLink(b.symbol, b.symbol, b.quote)}</td>
-      <td>${b.grids} <span class="status">${gridModeLabel(b.mode).toLowerCase()}</span></td>
-      <td>${fmt6(b.lower)} – ${fmt6(b.upper)}${moSlTpText(b)}</td>
-      <td>${fmt6(b.startPrice)}</td>
-      <td>${b.startDate}${b.startTime ? ' ' + b.startTime : ''}</td>
-      <td>${b.investment != null ? `${moFmtAmount(b.investment)} ${escapeHtml(moBotQuote(b))}` : `<span class="note-empty">${L('fehlt', 'missing')}</span>`}</td>
-      <td>${moNotePreview(b.note)}</td>
+      <td data-label="Grids">${b.grids} <span class="status">${gridModeLabel(b.mode).toLowerCase()}</span></td>
+      <td data-label="Range">${fmt6(b.lower)} – ${fmt6(b.upper)}${moSlTpText(b)}</td>
+      <td data-label="${L('Startkurs', 'Start price')}">${fmt6(b.startPrice)}</td>
+      <td data-label="${L('Startdatum', 'Start date')}">${b.startDate}${b.startTime ? ' ' + b.startTime : ''}</td>
+      <td data-label="Investment">${b.investment != null ? `${moFmtAmount(b.investment)} ${escapeHtml(moBotQuote(b))}` : `<span class="note-empty">${L('fehlt', 'missing')}</span>`}</td>
+      <td data-label="${L('Notiz', 'Note')}">${moNotePreview(b.note)}</td>
       <td><div class="cell-actions">
         <button class="secondary small" data-bt="${b.id}" type="button">${L('Backtesten', 'Backtest')}</button>
         <button class="secondary small" data-edit="${b.id}" type="button">${L('Anpassen', 'Edit')}</button>

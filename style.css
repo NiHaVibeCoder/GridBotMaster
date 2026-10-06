@@ -11,7 +11,7 @@ body{
   color:var(--text);
   font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
   line-height:1.45;
-  min-width:1200px; /* reine Desktop-App: darunter horizontal scrollen statt umbrechen */
+  -webkit-text-size-adjust:100%;
 }
 h1,h2,h3,h4{margin:0 0 6px; font-weight:600;}
 h1{font-size:1.5rem}
@@ -380,3 +380,74 @@ details.wy-how table{width:100%; border-collapse:collapse; margin-top:8px;}
 details.wy-how td{padding:4px 6px; border-bottom:1px solid var(--border); vertical-align:top;}
 .wy-foot{display:flex; gap:12px; align-items:center; margin-top:20px; padding-top:14px; border-top:1px solid var(--border); color:var(--muted); font-size:.76rem;}
 .wy-foot span{flex:1;}
+
+/* ---------- Responsive: Tablet / Handy ---------- */
+.note-dialog{max-width:calc(100vw - 24px);}
+.rm-scroll{overflow-x:auto;}
+#mo-removedTable table{min-width:960px;}
+
+@media (max-width:900px){
+  .grid-2{grid-template-columns:1fr;}
+  .scan-filters{grid-template-columns:1fr;}
+  .btn-row{grid-template-columns:1fr 1fr;}
+  #mo-results{grid-template-columns:1fr;}
+  .wy-facts{grid-template-columns:1fr 1fr;}
+
+  /* Tabs seitlich wischbar statt umbrechen */
+  .tabs{overflow-x:auto; scrollbar-width:none; padding:0 12px;}
+  .tabs::-webkit-scrollbar{display:none;}
+  .tab-btn{white-space:nowrap; flex:none;}
+
+  /* Coin Scanner: Spalte "Coin" bleibt beim seitlichen Wischen stehen */
+  .scan-table td:first-child, .scan-table th:first-child{position:sticky; left:0; background:var(--card); z-index:1; box-shadow:1px 0 0 var(--border);}
+  .scan-table th:first-child{z-index:3;}
+
+  /* Entfernte Bots: seitlich wischbar, Spalte "Paar" bleibt stehen */
+  #mo-removedTable td:first-child, #mo-removedTable th:first-child{position:sticky; left:0; background:var(--card); z-index:1; box-shadow:1px 0 0 var(--border);}
+  #mo-removedTable th:first-child{z-index:3;}
+}
+
+@media (max-width:700px){
+  .topbar-inner{padding:16px 12px 4px;}
+  h1{font-size:1.25rem;}
+  .subtitle{font-size:.82rem; margin-bottom:10px;}
+  .lang-switch{top:14px; right:12px;}
+  .container{padding:14px 10px 40px;}
+  .card, .bot-card{padding:14px; border-radius:12px;}
+
+  /* iOS zoomt bei Eingabefeldern unter 16px automatisch hinein */
+  input, select, textarea, .ss-trigger{font-size:16px;}
+
+  .btn-row{grid-template-columns:1fr;}
+  .kpis, .kpi-split, .trend{grid-template-columns:1fr;}
+  .kpi-main{grid-column:1 / -1;}
+  .kpi-main .kpi-value{font-size:1.6rem;}
+  .actions{flex-wrap:wrap;}
+  .verdict.verdict-why{flex-wrap:wrap;}
+  .eq-start{flex-wrap:wrap;}
+  .eq-start label{width:100%;}
+  .note-dialog{padding:16px;}
+  .why-dialog-head{flex-wrap:wrap;}
+  ol.wy-chain li{grid-template-columns:22px 1fr; }
+  ol.wy-chain li > :last-child{grid-column:2;}
+
+}
+
+/* Hinterlegte Bots: unter 1200px wird jede Zeile zur Karte (Tablet 2 Spalten, Handy 1 Spalte) */
+@media (max-width:1200px){
+  #mo-table thead{display:none;}
+  #mo-table{display:block;}
+  #mo-table tbody{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;}
+  #mo-table tr{display:block; background:#0c0f13; border:1px solid var(--border); border-radius:10px; padding:10px 12px; min-width:0;}
+  #mo-table td{display:flex; justify-content:flex-end; align-items:baseline; gap:6px; width:auto; max-width:none; padding:4px 0; border:0; text-align:right; white-space:normal; color:var(--text); font-weight:400;}
+  #mo-table td[data-label]::before{content:attr(data-label); color:var(--muted); font-size:.8rem; text-align:left; flex:none; margin-right:auto; padding-right:12px;}
+  #mo-table td:first-child{width:auto; justify-content:flex-start; font-size:1.02rem; font-weight:600; padding:0 0 8px; margin-bottom:4px; border-bottom:1px solid var(--border);}
+  #mo-table td:last-child{width:auto; display:block; padding-top:10px;}
+  #mo-table .cell-actions{flex-wrap:wrap; justify-content:stretch; gap:8px;}
+  #mo-table .cell-actions button{flex:1 1 calc(50% - 4px); padding:10px 8px; font-size:.88rem;}
+  #mo-table td:nth-child(7){max-width:none;}
+  #mo-table .note-preview{max-width:100%;}
+}
+@media (max-width:700px){
+  #mo-table tbody{grid-template-columns:1fr;}
+}
