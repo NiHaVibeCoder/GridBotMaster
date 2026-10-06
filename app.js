@@ -5,6 +5,190 @@
 const $ = (id) => document.getElementById(id);
 
 // ============================================================
+// SPRACHE (Deutsch / Englisch)
+// ============================================================
+// Gewählte Sprache wird im Browser gespeichert; Umschalten lädt die Seite neu.
+const LANG_KEY = 'gridbot-lang';
+let LANG = 'de';
+try { if (localStorage.getItem(LANG_KEY) === 'en') LANG = 'en'; } catch (e) { /* ohne Speicher: Deutsch */ }
+const EN = LANG === 'en';
+// Text je nach Sprache: L('Deutsch', 'English')
+const L = (de, en) => (EN ? en : de);
+// Zahlen: Deutsch mit Dezimalkomma bei Kursen, Englisch durchgehend mit Punkt
+const DEC = EN ? '.' : ',';
+const NUM_LOCALE = EN ? 'en-US' : 'de-CH';
+const DATE_LOCALE = EN ? 'en-GB' : 'de-CH';
+
+// Statische Texte aus index.html (Deutsch → Englisch). Schlüssel = Text mit zusammengefassten Leerzeichen.
+const STATIC_EN = {
+  'Eignung prüfen, Parameter optimieren, Bots zurücktesten und laufende Bots überwachen — auf Basis von Binance-Live-Kursdaten.': 'Check suitability, optimize parameters, backtest bots and monitor running bots — based on live Binance price data.',
+  'Analyse & Optimierung': 'Analysis & Optimization',
+  'Coin Scanner (USDT-Paare)': 'Coin Scanner (USDT pairs)',
+  'Suche': 'Search',
+  'Min. 24h-Volumen (USDT)': 'Min. 24h volume (USDT)',
+  'Einstufung': 'Rating',
+  'Alle': 'All',
+  'Gut geeignet': 'Well suited',
+  'Bedingt geeignet': 'Partly suitable',
+  'Ungeeignet': 'Unsuitable',
+  'Noch nicht bewertet': 'Not rated yet',
+  'Alle bewerten': 'Rate all',
+  'Mindestinvest für gut geeignete Coins berechnen': 'Calculate minimum investment for well-suited coins',
+  'Abbrechen': 'Cancel',
+  'Lade Marktdaten …': 'Loading market data …',
+  'Bewertet werden alle angezeigten Coins ab dem Mindestvolumen (Stablecoins ausgeblendet). Klick auf eine Spaltenüberschrift sortiert, Klick auf „Analysieren“ öffnet die Eignungsprüfung.': 'All displayed coins above the minimum volume are rated (stablecoins hidden). Click a column header to sort, click “Analyse” to open the suitability check.',
+  'Kurs': 'Price',
+  'Volumen 24h': 'Volume 24h',
+  'Mindestinvest': 'Min. investment',
+  'So wird bewertet': 'How the rating works',
+  'Trendstärke – ADX(14), Tage (25 P.)': 'Trend strength – ADX(14), days (25 pts)',
+  '<20 seitwärts = voll, 20–25 neutral, >25 Trend, ab 40 = 0': '<20 sideways = full, 20–25 neutral, >25 trend, from 40 = 0',
+  'Zickzack – Choppiness Index(14) (15 P.)': 'Zigzag – Choppiness Index(14) (15 pts)',
+  '≥61.8 = voll, ≤38.2 = 0': '≥61.8 = full, ≤38.2 = 0',
+  'Richtungseffizienz – Efficiency Ratio 30 T. (15 P.)': 'Directional efficiency – Efficiency Ratio 30 d (15 pts)',
+  '≤0.1 = voll, ≥0.4 = 0': '≤0.1 = full, ≥0.4 = 0',
+  'Bewegung – ATR% pro Tag (15 P.)': 'Movement – ATR% per day (15 pts)',
+  '2–8% = voll (Grid-Abstand 0.7–2% wird täglich gekreuzt), <1% = 0, >8% abnehmend (Ausbruchsrisiko)': '2–8% = full (grid spacing of 0.7–2% is crossed daily), <1% = 0, >8% decreasing (breakout risk)',
+  'Grid-Simulation 83 Tage (20 P.)': 'Grid simulation 83 days (20 pts)',
+  'Realisierter Grid-Gewinn 0% = 0, ≥15% = voll': 'Realized grid profit 0% = 0, ≥15% = full',
+  'Liquidität – 24h-Volumen (10 P.)': 'Liquidity – 24h volume (10 pts)',
+  '1 Mio = 0, ≥100 Mio = voll (logarithmisch)': '1 m = 0, ≥100 m = full (logarithmic)',
+  '≥65 Gut geeignet, 45–64 Bedingt, <45 Ungeeignet. Fällt die Eignungsprüfung (83-Tage-Trend) negativ aus, höchstens „Bedingt“.': '≥65 well suited, 45–64 partly, <45 unsuitable. If the suitability check (83-day trend) is negative, at most “Partly”.',
+  'Schwellen für ADX, CHOP und ER sind die in der Literatur üblichen Standardwerte; ATR%-, Grid-Sim- und Volumen-Stufen sind eigene Kalibrierungen (Quellen nennen dafür keine festen Zahlen). Keine Anlageberatung.': 'Thresholds for ADX, CHOP and ER are the standard values common in the literature; the ATR%, grid sim and volume levels are our own calibration (sources give no fixed numbers for them). Not investment advice.',
+  'Quote-Asset': 'Quote asset',
+  'Währungspaar': 'Trading pair',
+  'Lade Paare …': 'Loading pairs …',
+  'Eignung prüfen': 'Check suitability',
+  'Lade Handelspaare …': 'Loading trading pairs …',
+  'Weiter zur Optimierung': 'Continue to optimization',
+  'Ins Bot-Monitoring übernehmen': 'Add to bot monitoring',
+  'Parameter-Optimierung': 'Parameter optimization',
+  'Daten verwenden ab (optional, leer = genug Historie; Uhrzeit optional)': 'Use data from (optional, empty = enough history; time optional)',
+  'Stop-Loss optimieren': 'Optimize stop-loss',
+  'Take-Profit optimieren': 'Optimize take-profit',
+  'Optimieren': 'Optimize',
+  'Optimale Parameter': 'Optimal parameters',
+  'Als Bot ins Monitoring übernehmen': 'Add as bot to monitoring',
+  'Untere Preisgrenze': 'Lower price bound',
+  'Obere Preisgrenze': 'Upper price bound',
+  'Anzahl Grids': 'Number of grids',
+  'Grid-Modus': 'Grid mode',
+  'Geometrisch': 'Geometric',
+  'Arithmetisch': 'Arithmetic',
+  'Backtest ab (Startdatum, Uhrzeit optional)': 'Backtest from (start date, time optional)',
+  'Stop-Loss (Preis, optional)': 'Stop-loss (price, optional)',
+  'Take-Profit (Preis, optional)': 'Take-profit (price, optional)',
+  'Aktueller Preis': 'Current price',
+  'Backtesting starten': 'Start backtest',
+  'Auswertung': 'Results',
+  'Gesamtgewinn': 'Total profit',
+  'Woher kommt der Gewinn?': 'Where does the profit come from?',
+  'Durch Kursbewegung': 'From price movement',
+  'Durch Grid-Trading': 'From grid trading',
+  'Abgeschlossene Trades': 'Completed trades',
+  'Grid-Gewinn (realisiert)': 'Grid profit (realized)',
+  'Unrealisiert': 'Unrealized',
+  'Gebühren gesamt': 'Total fees',
+  'Ø Gewinn / Tag': 'Avg. profit / day',
+  'Gewinnverlauf': 'Profit over time',
+  'Rückblick (Backtest-Zeitraum)': 'Review (backtest period)',
+  'Ausblick': 'Outlook',
+  'Ausblick = statistische Fortschreibung (Regression, gleitende Durchschnitte, Momentum) der bisherigen Kursdaten. Keine Prognose, keine Anlageempfehlung.': 'Outlook = statistical extrapolation (regression, moving averages, momentum) of past price data. Not a forecast, not investment advice.',
+  'Bot hinterlegen': 'Add bot',
+  'Bitte wählen …': 'Please select …',
+  'Untere Grenze': 'Lower bound',
+  'Obere Grenze': 'Upper bound',
+  'Startkurs': 'Start price',
+  'Stop-Loss (optional)': 'Stop-loss (optional)',
+  'Take-Profit (optional)': 'Take-profit (optional)',
+  'Startdatum (Uhrzeit optional)': 'Start date (time optional)',
+  'Bot hinzufügen': 'Add bot',
+  'Startkapital (USDT)': 'Starting capital (USDT)',
+  'Übernehmen': 'Apply',
+  'Aktuelles Kapital': 'Current capital',
+  'Gewinn / Verlust gesamt': 'Total profit / loss',
+  'Beendete Bots': 'Ended bots',
+  'Kapitalverlauf': 'Capital over time',
+  'Hinterlegte Bots': 'Saved bots',
+  'Paar': 'Pair',
+  'Startdatum': 'Start date',
+  'Notiz': 'Note',
+  'Noch keine Bots hinterlegt.': 'No bots saved yet.',
+  'Alle Bots prüfen': 'Check all bots',
+  'Entfernte Bots': 'Removed bots',
+  'Gestoppt am': 'Stopped on',
+  'Gewinn / Verlust': 'Profit / loss',
+  'Kapital danach': 'Capital after',
+  'Eignung': 'Suitability',
+  'Notizen': 'Notes',
+  'Noch keine Bots entfernt.': 'No bots removed yet.',
+  'Bot stoppen': 'Stop bot',
+  'Der Bot wird unter „Entfernte Bots“ abgelegt. Alle Felder sind Pflichtfelder.': 'The bot is moved to “Removed bots”. All fields are required.',
+  'Ergebnis': 'Result',
+  'Gewinn': 'Profit',
+  'Verlust': 'Loss',
+  'Betrag (': 'Amount (',
+  'Anzahl Trades': 'Number of trades',
+  'Notiz: Warum wird der Bot gestoppt?': 'Note: Why is the bot being stopped?',
+  'Beurteilung': 'Assessment',
+  'Schliessen': 'Close',
+  'Speichern': 'Save',
+  'z. B. SOL': 'e.g. SOL',
+  'ADX(14) Tagesbasis: <20 seitwärts, >25 Trend': 'ADX(14) daily: <20 sideways, >25 trend',
+  'Choppiness Index(14) Tagesbasis: >61.8 seitwärts, <38.2 Trend': 'Choppiness Index(14) daily: >61.8 sideways, <38.2 trend',
+  'Kaufman Efficiency Ratio (30 Tage): nahe 0 = Zickzack, >0.3–0.4 = gerichteter Trend': 'Kaufman Efficiency Ratio (30 days): near 0 = zigzag, >0.3–0.4 = directional trend',
+  'Durchschnittliche Tagesschwankung (ATR 14) in % vom Kurs': 'Average daily fluctuation (ATR 14) in % of price',
+  'Realisierter Grid-Gewinn einer Simulation über 83 Tage (Range = Support/Resistance, ~2% Grid-Abstand)': 'Realized grid profit of a simulation over 83 days (range = support/resistance, ~2% grid spacing)',
+  'Empfohlener Mindestinvest aus der Startempfehlung (wie im Tab Analyse & Optimierung). Bei „Gut geeignet“ automatisch berechnet, sonst per Klick.': 'Recommended minimum investment from the start recommendation (as in the Analysis & Optimization tab). Calculated automatically for “Well suited”, otherwise on click.',
+  'Uhrzeit (optional)': 'Time (optional)',
+  'leer = kein Stop-Loss': 'empty = no stop-loss',
+  'leer = kein Take-Profit': 'empty = no take-profit',
+  'z. B. 100': 'e.g. 100',
+  'z. B. 500': 'e.g. 500',
+  'z. B. 4,20': 'e.g. 4.20',
+  'z. B. 12': 'e.g. 12',
+};
+
+// Statische Seite übersetzen (das Skript steht am Ende von <body>, das DOM ist also schon da)
+function translateStatic(root) {
+  const norm = (s) => s.replace(/\s+/g, ' ').trim();
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+    const key = norm(n.nodeValue);
+    if (key && STATIC_EN[key]) {
+      const lead = n.nodeValue.match(/^\s*/)[0], trail = n.nodeValue.match(/\s*$/)[0];
+      n.nodeValue = lead + STATIC_EN[key] + trail;
+    }
+  }
+  for (const el of root.querySelectorAll('[title], [placeholder], [aria-label]')) {
+    for (const attr of ['title', 'placeholder', 'aria-label']) {
+      const v = el.getAttribute(attr);
+      if (v && STATIC_EN[norm(v)]) el.setAttribute(attr, STATIC_EN[norm(v)]);
+    }
+  }
+}
+
+// Sprachumschalter oben rechts: Auswahl merken und Seite neu laden
+function initLangSwitch() {
+  document.querySelectorAll('.lang-btn').forEach((btn) => {
+    const active = btn.dataset.lang === LANG;
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-pressed', String(active));
+    btn.addEventListener('click', () => {
+      if (btn.dataset.lang === LANG) return;
+      try { localStorage.setItem(LANG_KEY, btn.dataset.lang); } catch (e) { /* ohne Speicher kein Wechsel möglich */ }
+      location.reload();
+    });
+  });
+}
+
+if (EN) {
+  document.documentElement.lang = 'en';
+  translateStatic(document.body);
+}
+initLangSwitch();
+
+// ============================================================
 // SHARED: API / Symbole
 // ============================================================
 
@@ -27,7 +211,7 @@ async function apiGet(path, params = {}) {
   for (const base of API_BASES) {
     try {
       const res = await fetch(`${base}${path}${qs ? '?' + qs : ''}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status} von ${base}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status} ${L('von', 'from')} ${base}`);
       return await res.json();
     } catch (e) {
       lastErr = e;
@@ -96,7 +280,7 @@ function makeSearchable(sel) {
   wrap.innerHTML = `
     <button type="button" class="ss-trigger" aria-haspopup="listbox" aria-expanded="false"><span class="ss-text"></span></button>
     <div class="ss-panel hidden">
-      <input type="text" class="ss-search" placeholder="Suchen …" autocomplete="off" spellcheck="false">
+      <input type="text" class="ss-search" placeholder="${L('Suchen …', 'Search …')}" autocomplete="off" spellcheck="false">
       <ul class="ss-list" role="listbox"></ul>
     </div>`;
   wrap.appendChild(sel);
@@ -134,7 +318,7 @@ function makeSearchable(sel) {
     active = Math.max(0, items.findIndex((x) => x.value === sel.value));
     listEl.innerHTML = items.length
       ? items.map((x, i) => `<li role="option" data-i="${i}" class="${i === active ? 'active' : ''}${x.value === sel.value ? ' selected' : ''}">${escapeHtml(x.label)}</li>`).join('')
-      : '<li class="ss-empty">Keine Treffer</li>';
+      : `<li class="ss-empty">${L('Keine Treffer', 'No matches')}</li>`;
     listEl.querySelector('.active')?.scrollIntoView({ block: 'nearest' });
   };
   const setActive = (i) => {
@@ -218,15 +402,16 @@ function anSlTpText(r, kind, pd) {
   const isSl = kind === 'sl';
   const price = isSl ? r.stopLossPrice : r.takeProfitPrice;
   const pct = isSl ? r.sl : r.tp;
-  return `${pct}% ${isSl ? 'unter der unteren' : 'über der oberen'} Grenze (${fmtPrice(price, pd)}) ${anDistText(price, r.currentPrice)}`;
+  const where = isSl ? L('unter der unteren Grenze', 'below the lower bound') : L('über der oberen Grenze', 'above the upper bound');
+  return `${pct}% ${where} (${fmtPrice(price, pd)}) ${anDistText(price, r.currentPrice)}`;
 }
 
 // Hinweis, worauf die SL/TP-Empfehlung beruht
 function anSlTpNote(r) {
   const n = r.validatedFolds;
   const parts = [];
-  if (r.sl) parts.push(`Stop-Loss in ${r.slHits} von ${n} Testzeitfenstern ausgelöst`);
-  if (r.tp) parts.push(`Take-Profit in ${r.tpHits} von ${n} Testzeitfenstern ausgelöst`);
+  if (r.sl) parts.push(L(`Stop-Loss in ${r.slHits} von ${n} Testzeitfenstern ausgelöst`, `Stop-loss triggered in ${r.slHits} of ${n} test windows`));
+  if (r.tp) parts.push(L(`Take-Profit in ${r.tpHits} von ${n} Testzeitfenstern ausgelöst`, `Take-profit triggered in ${r.tpHits} of ${n} test windows`));
   if (!parts.length) return '';
   return `<p class="note">${parts.join(', ')}.</p>`;
 }
@@ -247,17 +432,17 @@ function anStopPnlText(r, kind, price, quote) {
   });
   if (!res.stopped) return '';
   const pct = res.total / r.minInvest.total * 100;
-  return `<br>Bei Auslösung mit ${fmt(r.minInvest.total, 0)} ${quote} Mindestinvest: `
+  return `<br>${L(`Bei Auslösung mit ${fmt(r.minInvest.total, 0)} ${quote} Mindestinvest`, `If triggered with ${fmt(r.minInvest.total, 0)} ${quote} minimum investment`)}: `
     + `<b class="${res.total >= 0 ? 'pos' : 'neg'}">${signed(res.total)} ${quote} (${signed(pct)} %)</b> `
-    + `<span class="status">(Kurs läuft direkt vom aktuellen Kurs bis zum ${isSl ? 'Stop-Loss' : 'Take-Profit'}, inkl. Gebühren)</span>`;
+    + `<span class="status">${L(`(Kurs läuft direkt vom aktuellen Kurs bis zum ${isSl ? 'Stop-Loss' : 'Take-Profit'}, inkl. Gebühren)`, `(price moves straight from the current price to the ${isSl ? 'stop-loss' : 'take-profit'}, incl. fees)`)}</span>`;
 }
 
 // Abstand einer Grid-Grenze zum aktuellen Kurs, z.B. "(−8.5% unter aktuellem Kurs)"
 function anDistText(level, price) {
   if (!(price > 0) || !isFinite(level)) return '';
   const pct = (level - price) / price * 100;
-  const dir = pct < 0 ? 'unter' : 'über';
-  return `<span class="status">(${pct >= 0 ? '+' : '−'}${Math.abs(pct).toFixed(1)}% ${dir} aktuellem Kurs)</span>`;
+  const dir = pct < 0 ? L('unter aktuellem Kurs', 'below current price') : L('über aktuellem Kurs', 'above current price');
+  return `<span class="status">(${pct >= 0 ? '+' : '−'}${Math.abs(pct).toFixed(1)}% ${dir})</span>`;
 }
 
 async function loadKlinesRange(symbol, interval, startTime, endTime, onProgress) {
@@ -277,7 +462,7 @@ async function loadKlinesRange(symbol, interval, startTime, endTime, onProgress)
 // ---------- gemeinsame Formatierung ----------
 
 function fmt(n, d = 2) {
-  return n.toLocaleString('de-CH', { minimumFractionDigits: d, maximumFractionDigits: d });
+  return n.toLocaleString(NUM_LOCALE, { minimumFractionDigits: d, maximumFractionDigits: d });
 }
 function signed(n, d = 2) {
   return (n > 0 ? '+' : '') + fmt(n, d);
@@ -298,7 +483,7 @@ function fmtPrice(n, decimals) {
   } else {
     d = Math.max(d, 6);
   }
-  return v.toFixed(d).replace('.', ',');
+  return v.toFixed(d).replace('.', DEC);
 }
 // Alias (fmtPrice liefert inzwischen selbst das Dezimalkomma, z. B. 0,019280)
 function fmtPriceComma(n, decimals) {
@@ -306,11 +491,13 @@ function fmtPriceComma(n, decimals) {
 }
 // Preis für Eingabefelder: Tick-Genauigkeit des Symbols, Dezimalkomma
 function priceToInput(n, decimals) {
-  return Number(n).toFixed(decimals ?? 6).replace('.', ',');
+  return Number(n).toFixed(decimals ?? 6).replace('.', DEC);
 }
-// Zahl aus Eingabefeld lesen: akzeptiert Komma und Punkt als Dezimaltrennzeichen
+// Zahl aus Eingabefeld lesen: Deutsch akzeptiert Komma und Punkt als Dezimaltrennzeichen,
+// Englisch nur den Punkt (Komma = Tausendertrennzeichen, z. B. 1,000.50)
 function parseNum(v) {
-  const t = String(v ?? '').trim().replace(/[\s'’]/g, '').replace(',', '.');
+  let t = String(v ?? '').trim().replace(/[\s'’]/g, '');
+  t = EN ? t.replace(/,/g, '') : t.replace(',', '.');
   return t === '' ? NaN : Number(t);
 }
 function colorize(node, n) {
@@ -318,7 +505,7 @@ function colorize(node, n) {
   node.classList.toggle('neg', n < 0);
 }
 function fmtDate(ms) {
-  return new Date(ms).toLocaleString('de-CH', { dateStyle: 'medium', timeStyle: 'short' });
+  return new Date(ms).toLocaleString(DATE_LOCALE, { dateStyle: 'medium', timeStyle: 'short' });
 }
 
 // ---------- ATR, Walk-Forward-Folds, Prüfintervall ----------
@@ -416,10 +603,10 @@ function dailyATR(candles, period = 14) {
 
 // Heuristische Prüfintervall-Empfehlung: höhere Volatilität = engmaschiger prüfen.
 function recommendCheckInterval(volPct) {
-  if (volPct > 40) return 'Täglich';
-  if (volPct > 25) return 'Alle 2–3 Tage';
-  if (volPct > 12) return 'Wöchentlich';
-  return 'Alle 1–2 Wochen';
+  if (volPct > 40) return L('Täglich', 'Daily');
+  if (volPct > 25) return L('Alle 2–3 Tage', 'Every 2–3 days');
+  if (volPct > 12) return L('Wöchentlich', 'Weekly');
+  return L('Alle 1–2 Wochen', 'Every 1–2 weeks');
 }
 
 // ============================================================
@@ -447,29 +634,29 @@ function assessSuitability(candles) {
 
   let verdict, cls;
   if (rangePct < 4) {
-    verdict = 'Ungeeignet: Die Preisspanne ist sehr eng, zu wenig Bewegung für profitable Grid-Trades.';
+    verdict = L('Ungeeignet: Die Preisspanne ist sehr eng, zu wenig Bewegung für profitable Grid-Trades.', 'Unsuitable: The price range is very narrow, too little movement for profitable grid trades.');
     cls = 'bad';
   } else if (driftRatio > 0.65) {
-    verdict = 'Eher ungeeignet: Starker Trend statt Seitwärtsbewegung – Grid-Bots laufen bei Trends Gefahr, gegen die Richtung zu handeln.';
+    verdict = L('Eher ungeeignet: Starker Trend statt Seitwärtsbewegung – Grid-Bots laufen bei Trends Gefahr, gegen die Richtung zu handeln.', 'Rather unsuitable: Strong trend instead of sideways movement – in trends, grid bots risk trading against the direction.');
     cls = 'bad';
   } else if (driftRatio > 0.4) {
-    verdict = 'Bedingt geeignet: Moderater Trend vorhanden.';
+    verdict = L('Bedingt geeignet: Moderater Trend vorhanden.', 'Partly suitable: Moderate trend present.');
     cls = 'warn';
   } else {
-    verdict = 'Gut geeignet: Ausreichend Volatilität bei überwiegend seitwärts gerichteter Bewegung.';
+    verdict = L('Gut geeignet: Ausreichend Volatilität bei überwiegend seitwärts gerichteter Bewegung.', 'Well suited: Sufficient volatility with mostly sideways movement.');
     cls = 'good';
   }
   return { verdict, cls, rangePct, vol: vol * 100, netDrift, driftRatio, low, high };
 }
 
 function verdictLabel(cls) {
-  return cls === 'good' ? 'Gut geeignet' : cls === 'warn' ? 'Bedingt geeignet' : 'Ungeeignet';
+  return cls === 'good' ? L('Gut geeignet', 'Well suited') : cls === 'warn' ? L('Bedingt geeignet', 'Partly suitable') : L('Ungeeignet', 'Unsuitable');
 }
 
 // ---------- Grid-Simulation (eine Engine für Backtest, Optimierung und Scanner) ----------
 
 // Grid-Modi wie beim Binance Spot Grid. Ohne Angabe gilt überall 'geometric' (Scanner, alte Bots).
-const GRID_MODES = { geometric: 'Geometrisch', arithmetic: 'Arithmetisch' };
+const GRID_MODES = { geometric: L('Geometrisch', 'Geometric'), arithmetic: L('Arithmetisch', 'Arithmetic') };
 function gridModeLabel(mode) {
   return GRID_MODES[mode] || GRID_MODES.geometric;
 }
@@ -677,7 +864,7 @@ function simulateGrid(candles, { lower, upper, grids, investment, stopLoss = nul
     levels, skip, q, p0, last, quote, base, fees, realized, buys, sells, trades: sells, initialBuyCost,
     finalValue, total, unrealized: total - realized,
     startBase, marketPnl, gridPnl, hodlPnl,
-    outOfRangePct: (outOfRange / used) * 100,
+    outOfRange, outOfRangePct: (outOfRange / used) * 100,
     minPrice, maxPrice, used, maxDrawdownPct, curve,
     stopped, stopReason, stopPrice, stopTime,
     priceChangePct: (candles[candles.length - 1].c - p0) / p0 * 100,
@@ -898,19 +1085,29 @@ const OPT_SPAN_MS =1000 * 4 * 3600000; // Optimierungs-Zeitraum: ~166 Tage
 const GRID_MODE_WIDE_RANGE = 0.30;
 function recommendGridMode(rlow, rhigh, ev) {
   const width = rhigh / rlow - 1;
-  const w = (width * 100).toFixed(1).replace('.', ',');
+  const w = (width * 100).toFixed(1).replace('.', DEC);
   if (width >= GRID_MODE_WIDE_RANGE) {
-    return { mode: 'geometric', reason: `Breite Range (${w}% ≥ 30%): Geometrisch hält den Gewinn pro Grid in % über die ganze Range gleich. Arithmetisch wäre er an der unteren Grenze ${(rhigh / rlow).toFixed(2).replace('.', ',')}-mal so hoch wie an der oberen.` };
+    const ratio = (rhigh / rlow).toFixed(2).replace('.', DEC);
+    return { mode: 'geometric', reason: L(
+      `Breite Range (${w}% ≥ 30%): Geometrisch hält den Gewinn pro Grid in % über die ganze Range gleich. Arithmetisch wäre er an der unteren Grenze ${ratio}-mal so hoch wie an der oberen.`,
+      `Wide range (${w}% ≥ 30%): Geometric keeps the profit per grid in % the same across the whole range. With arithmetic it would be ${ratio} times as high at the lower bound as at the upper bound.`) };
   }
   if (ev) {
+    const er = ev.er.toFixed(2).replace('.', DEC), atr = ev.atrPct.toFixed(1).replace('.', DEC), erMax = L('0,4', '0.4');
     const trend = [];
     if (ev.adx > 25) trend.push(`ADX ${ev.adx.toFixed(0)} > 25`);
-    if (ev.er > 0.4) trend.push(`Efficiency Ratio ${ev.er.toFixed(2).replace('.', ',')} > 0,4`);
-    if (trend.length) return { mode: 'geometric', reason: `Trendmarkt (${trend.join(', ')}): Für trendende Märkte wird Geometrisch empfohlen, weil die Grids prozentual mitskalieren.` };
-    if (ev.atrPct > 8) return { mode: 'geometric', reason: `Sehr volatil (ATR ${ev.atrPct.toFixed(1).replace('.', ',')}% pro Tag > 8%): Bei hoher Volatilität wird Geometrisch empfohlen.` };
-    return { mode: 'arithmetic', reason: `Enge Range (${w}% < 30%) und Seitwärtsmarkt (ADX ${ev.adx.toFixed(0)} ≤ 25, Efficiency Ratio ${ev.er.toFixed(2).replace('.', ',')} ≤ 0,4, ATR ${ev.atrPct.toFixed(1).replace('.', ',')}% ≤ 8%): Arithmetisch passt zu engen Ranges in stabilen Märkten – jedes Grid bringt denselben Betrag.` };
+    if (ev.er > 0.4) trend.push(`Efficiency Ratio ${er} > ${erMax}`);
+    if (trend.length) return { mode: 'geometric', reason: L(
+      `Trendmarkt (${trend.join(', ')}): Für trendende Märkte wird Geometrisch empfohlen, weil die Grids prozentual mitskalieren.`,
+      `Trending market (${trend.join(', ')}): Geometric is recommended for trending markets because the grids scale in percent.`) };
+    if (ev.atrPct > 8) return { mode: 'geometric', reason: L(
+      `Sehr volatil (ATR ${atr}% pro Tag > 8%): Bei hoher Volatilität wird Geometrisch empfohlen.`,
+      `Very volatile (ATR ${atr}% per day > 8%): Geometric is recommended for high volatility.`) };
+    return { mode: 'arithmetic', reason: L(
+      `Enge Range (${w}% < 30%) und Seitwärtsmarkt (ADX ${ev.adx.toFixed(0)} ≤ 25, Efficiency Ratio ${er} ≤ ${erMax}, ATR ${atr}% ≤ 8%): Arithmetisch passt zu engen Ranges in stabilen Märkten – jedes Grid bringt denselben Betrag.`,
+      `Narrow range (${w}% < 30%) and sideways market (ADX ${ev.adx.toFixed(0)} ≤ 25, Efficiency Ratio ${er} ≤ ${erMax}, ATR ${atr}% ≤ 8%): Arithmetic suits narrow ranges in stable markets – every grid earns the same amount.`) };
   }
-  return { mode: 'geometric', reason: `Marktphase nicht bestimmbar (zu wenig Historie) – Geometrisch als Binance-Standard.` };
+  return { mode: 'geometric', reason: L('Marktphase nicht bestimmbar (zu wenig Historie) – Geometrisch als Binance-Standard.', 'Market phase cannot be determined (too little history) – geometric as the Binance default.') };
 }
 
 // Walk-Forward-Optimierung im empfohlenen Grid-Modus. Die Range hängt von der Optimierung ab,
@@ -937,19 +1134,19 @@ function optRecommendGridParams(candles, ev, investment = 1000) {
 
 // Herkunft der Grenzen: Support/Resistance aus dem Kursverlauf oder Kurs ± k × Tages-ATR
 function anRangeSourceText(r) {
-  const atrTxt = `${r.atrMult} × Tages-ATR`;
-  const cover = (t) => `${(100 - t * 2).toFixed(0)}% der Kursbewegung abgedeckt`;
+  const atrTxt = L(`${r.atrMult} × Tages-ATR`, `${r.atrMult} × daily ATR`);
+  const cover = (t) => L(`${(100 - t * 2).toFixed(0)}% der Kursbewegung abgedeckt`, `${(100 - t * 2).toFixed(0)}% of price movement covered`);
   const lower = {
-    atr: `Kurs − ${atrTxt} (Support läge tiefer)`,
-    outer: `Support am Tief des Zeitraums (${cover(RANGE_OUTER_TAIL_PCT)})`,
-    headroom: 'Kurs − 2% (ein Grid-Abstand, kein Support unter dem Kurs)',
+    atr: L(`Kurs − ${atrTxt} (Support läge tiefer)`, `Price − ${atrTxt} (support would be lower)`),
+    outer: L(`Support am Tief des Zeitraums (${cover(RANGE_OUTER_TAIL_PCT)})`, `Support at the period low (${cover(RANGE_OUTER_TAIL_PCT)})`),
+    headroom: L('Kurs − 2% (ein Grid-Abstand, kein Support unter dem Kurs)', 'Price − 2% (one grid step, no support below the price)'),
   }[r.lowerSource] || `Support (${cover(r.tailPct)})`;
   const upper = {
-    atr: `Kurs + ${atrTxt} (kein Widerstand über dem Kurs)`,
-    outer: `Resistance am Hoch des Zeitraums (${cover(RANGE_OUTER_TAIL_PCT)})`,
-    headroom: 'Kurs + 2% (ein Grid-Abstand, kein Widerstand über dem Kurs)',
+    atr: L(`Kurs + ${atrTxt} (kein Widerstand über dem Kurs)`, `Price + ${atrTxt} (no resistance above the price)`),
+    outer: L(`Resistance am Hoch des Zeitraums (${cover(RANGE_OUTER_TAIL_PCT)})`, `Resistance at the period high (${cover(RANGE_OUTER_TAIL_PCT)})`),
+    headroom: L('Kurs + 2% (ein Grid-Abstand, kein Widerstand über dem Kurs)', 'Price + 2% (one grid step, no resistance above the price)'),
   }[r.upperSource] || `Resistance (${cover(r.tailPct)})`;
-  return `Untere Grenze: ${lower}<br>Obere Grenze: ${upper}`;
+  return `${L('Untere Grenze', 'Lower bound')}: ${lower}<br>${L('Obere Grenze', 'Upper bound')}: ${upper}`;
 }
 
 // Tabellenzeile "Grid-Modus" für die Empfehlungen im Analyse-Tab
@@ -979,7 +1176,7 @@ function anDrawProfitChart(curve) {
 }
 
 function anFmtDate(ts) {
-  return new Date(ts).toLocaleDateString('de-DE', { year: 'numeric', month: '2-digit', day: '2-digit' });
+  return new Date(ts).toLocaleDateString(DATE_LOCALE, { year: 'numeric', month: '2-digit', day: '2-digit' });
 }
 
 // Datum + optionale Uhrzeit (lokale Zeit) -> Millisekunden.
@@ -994,10 +1191,10 @@ function dateTimeToMs(dateStr, timeStr, fallbackTime = 'T00:00:00') {
 // Eignung auf 500 4h-Kerzen, Grid-Empfehlung per Walk-Forward auf 1h-Kerzen, Mindestinvest aus den
 // Binance-Ordervorgaben. rec.minInvest = null, wenn die Ordervorgaben nicht geladen werden konnten.
 async function anComputeStartRec(symbol, onStatus = () => {}) {
-  onStatus('Lade historische Daten …');
+  onStatus(L('Lade historische Daten …', 'Loading historical data …'));
   const candles = await fetchKlines(symbol, '4h', { limit: 500 }); // ~83 Tage
   const a = evaluateSuitability(candles);
-  onStatus('Suche verlässliche Startparameter …');
+  onStatus(L('Suche verlässliche Startparameter …', 'Searching for reliable start parameters …'));
   // Grid-Empfehlung auf 1h-Kerzen über denselben Zeitraum: 4h-Kerzen unterschätzen die
   // Trades enger Grids stark (max. ein Fill je Level und Kerze).
   const opt1h = await loadKlinesRange(symbol, '1h', candles[0].time, Date.now(), () => {});
@@ -1021,7 +1218,7 @@ function initAnalyseTab() {
   checkBtn.addEventListener('click', async () => {
     anChosenSymbol = pairInput.value.toUpperCase();
     checkBtn.disabled = true;
-    loadStatus.textContent = 'Lade historische Daten …';
+    loadStatus.textContent = L('Lade historische Daten …', 'Loading historical data …');
     try {
       const { candles, a, rec, price } = await anComputeStartRec(anChosenSymbol, (t) => { loadStatus.textContent = t; });
       anCandles500 = candles;
@@ -1031,45 +1228,45 @@ function initAnalyseTab() {
       const quote = symDec ? symDec.quote : '';
       const minInvRow = rec.minInvest
         ? `<b>${fmt(rec.minInvest.total, 0)} ${quote}</b>`
-        : 'Nicht verfügbar (Binance-Ordervorgaben konnten nicht geladen werden)';
+        : L('Nicht verfügbar (Binance-Ordervorgaben konnten nicht geladen werden)', 'Not available (Binance order limits could not be loaded)');
       // Betrag pro Grid: Mindestinvest gleichmässig auf die Grids verteilt
       const perGridRow = rec.minInvest
-        ? `${fmt(rec.minInvest.total / rec.gc, 2)} ${quote} <span class="status">(${fmt(rec.minInvest.total, 0)} ${quote} Mindestinvest ÷ ${rec.gc} Grids)</span>`
-        : 'Nicht verfügbar (Mindestinvest unbekannt)';
-      const spanRow = `${fmtPriceComma(rec.rhigh - rec.rlow, pd)} ${quote} <span class="status">(+${fmt((rec.rhigh / rec.rlow - 1) * 100, 1)} % von der unteren zur oberen Grenze)</span>`;
+        ? `${fmt(rec.minInvest.total / rec.gc, 2)} ${quote} <span class="status">(${fmt(rec.minInvest.total, 0)} ${quote} ${L('Mindestinvest', 'minimum investment')} ÷ ${rec.gc} Grids)</span>`
+        : L('Nicht verfügbar (Mindestinvest unbekannt)', 'Not available (minimum investment unknown)');
+      const spanRow = `${fmtPriceComma(rec.rhigh - rec.rlow, pd)} ${quote} <span class="status">(+${fmt((rec.rhigh / rec.rlow - 1) * 100, 1)} % ${L('von der unteren zur oberen Grenze', 'from the lower to the upper bound')})</span>`;
       const whyRow = a.ev ? { ...a.ev, symbol: anChosenSymbol, base: symDec ? symDec.base : anChosenSymbol, quote, ratedAt: Date.now() } : null;
-      $('an-verdictBox').innerHTML = `<div class="verdict ${a.cls}${whyRow ? ' verdict-why' : ''}"><span>${a.verdict}</span>${whyRow ? '<button type="button" class="secondary small" id="an-whyBtn">Einstufung anzeigen</button>' : ''}</div>`;
+      $('an-verdictBox').innerHTML = `<div class="verdict ${a.cls}${whyRow ? ' verdict-why' : ''}"><span>${a.verdict}</span>${whyRow ? `<button type="button" class="secondary small" id="an-whyBtn">${L('Einstufung anzeigen', 'Show rating')}</button>` : ''}</div>`;
       if (whyRow) $('an-whyBtn').addEventListener('click', () => scShowWhy(whyRow, { fromAnalyse: true }));
       const ev = a.ev;
       $('an-metricsBox').innerHTML = (ev ? `
-        <div class="metric"><div class="k">Score (wie Coin Scanner)</div><div class="v">${ev.score} / 100</div></div>
-        <div class="metric"><div class="k">ADX (Tage) · &lt;20 seitwärts, &gt;25 Trend</div><div class="v">${ev.adx.toFixed(0)}</div></div>
-        <div class="metric"><div class="k">Choppiness · &gt;61.8 seitwärts</div><div class="v">${ev.chop.toFixed(0)}</div></div>
+        <div class="metric"><div class="k">${L('Score (wie Coin Scanner)', 'Score (as in Coin Scanner)')}</div><div class="v">${ev.score} / 100</div></div>
+        <div class="metric"><div class="k">${L('ADX (Tage) · &lt;20 seitwärts, &gt;25 Trend', 'ADX (days) · &lt;20 sideways, &gt;25 trend')}</div><div class="v">${ev.adx.toFixed(0)}</div></div>
+        <div class="metric"><div class="k">${L('Choppiness · &gt;61.8 seitwärts', 'Choppiness · &gt;61.8 sideways')}</div><div class="v">${ev.chop.toFixed(0)}</div></div>
         <div class="metric"><div class="k">Efficiency Ratio · &gt;0.4 Trend</div><div class="v">${ev.er.toFixed(2)}</div></div>
-        <div class="metric"><div class="k">ATR pro Tag</div><div class="v">${ev.atrPct.toFixed(1)}%</div></div>
-        <div class="metric"><div class="k">Grid-Simulation (83 Tage)</div><div class="v">${ev.gridProfit.toFixed(1)}%</div></div>
+        <div class="metric"><div class="k">${L('ATR pro Tag', 'ATR per day')}</div><div class="v">${ev.atrPct.toFixed(1)}%</div></div>
+        <div class="metric"><div class="k">${L('Grid-Simulation (83 Tage)', 'Grid simulation (83 days)')}</div><div class="v">${ev.gridProfit.toFixed(1)}%</div></div>
       ` : '') + `
-        <div class="metric"><div class="k">Preisspanne (83 Tage)</div><div class="v">${a.rangePct.toFixed(1)}%</div></div>
-        <div class="metric"><div class="k">Volatilität</div><div class="v">${a.vol.toFixed(1)}%</div></div>
-        <div class="metric"><div class="k">Netto-Drift</div><div class="v">${a.netDrift.toFixed(1)}%</div></div>
-        <div class="metric"><div class="k">Trend-Anteil</div><div class="v">${(a.driftRatio * 100).toFixed(0)}%</div></div>
+        <div class="metric"><div class="k">${L('Preisspanne (83 Tage)', 'Price range (83 days)')}</div><div class="v">${a.rangePct.toFixed(1)}%</div></div>
+        <div class="metric"><div class="k">${L('Volatilität', 'Volatility')}</div><div class="v">${a.vol.toFixed(1)}%</div></div>
+        <div class="metric"><div class="k">${L('Netto-Drift', 'Net drift')}</div><div class="v">${a.netDrift.toFixed(1)}%</div></div>
+        <div class="metric"><div class="k">${L('Trend-Anteil', 'Trend share')}</div><div class="v">${(a.driftRatio * 100).toFixed(0)}%</div></div>
       `;
       $('an-recBox').innerHTML = `
-        <h4 style="margin:16px 0 6px">Empfehlung für einen Start zum Zeitpunkt dieser Prüfung</h4>
-        <p class="sub" style="margin:0 0 8px">Aktueller Kurs: ${fmtPrice(rec.currentPrice, pd)} — das Grid ist um diesen Kurs herum aufgespannt.</p>
+        <h4 style="margin:16px 0 6px">${L('Empfehlung für einen Start zum Zeitpunkt dieser Prüfung', 'Recommendation for a start at the time of this check')}</h4>
+        <p class="sub" style="margin:0 0 8px">${L('Aktueller Kurs', 'Current price')}: ${fmtPrice(rec.currentPrice, pd)} — ${L('das Grid ist um diesen Kurs herum aufgespannt.', 'the grid is set up around this price.')}</p>
         <table class="details">
-          ${anModeRow('Empfohlener Grid-Modus', rec)}
-          <tr><td>Empfohlene Grid-Anzahl</td><td><b>${rec.gc}</b></td></tr>
-          <tr><td>Empfohlene untere Grenze</td><td>${fmtPriceComma(rec.rlow, pd)} ${anDistText(rec.rlow, rec.currentPrice)}</td></tr>
-          <tr><td>Empfohlene obere Grenze</td><td>${fmtPriceComma(rec.rhigh, pd)} ${anDistText(rec.rhigh, rec.currentPrice)}</td></tr>
-          <tr><td>Spannweite</td><td>${spanRow}</td></tr>
-          <tr><td>Gewinn pro Grid (nach Gebühren)</td><td>${btProfitPerGridText(rec.rlow, rec.rhigh, rec.gc, rec.mode, quote, pd)}</td></tr>
-          <tr><td>Empfohlener Mindestinvest</td><td>${minInvRow}</td></tr>
-          <tr><td>Betrag pro Grid</td><td>${perGridRow}</td></tr>
-          <tr><td>Stop-Loss empfohlen?</td><td>${rec.sl ? 'Ja, ' + anSlTpText(rec, 'sl', pd) + anStopPnlText(rec, 'sl', price, quote) : 'Nein, aufgrund der Analyse nicht nötig'}</td></tr>
-          <tr><td>Take-Profit empfohlen?</td><td>${rec.tp ? 'Ja, ' + anSlTpText(rec, 'tp', pd) + anStopPnlText(rec, 'tp', price, quote) : 'Nein, aufgrund der Analyse nicht nötig'}</td></tr>
-          <tr><td>Empfohlenes Prüfintervall</td><td>${recommendCheckInterval(a.vol)}</td></tr>
-          <tr><td>Handelsaktivität (Walk-Forward)</td><td>Ø ${rec.avgTradesPerFold.toFixed(1)} abgeschlossene Trades je Zeitfenster (Mindestanforderung: ${rec.minTradesPerFold})</td></tr>
+          ${anModeRow(L('Empfohlener Grid-Modus', 'Recommended grid mode'), rec)}
+          <tr><td>${L('Empfohlene Grid-Anzahl', 'Recommended number of grids')}</td><td><b>${rec.gc}</b></td></tr>
+          <tr><td>${L('Empfohlene untere Grenze', 'Recommended lower bound')}</td><td>${fmtPriceComma(rec.rlow, pd)} ${anDistText(rec.rlow, rec.currentPrice)}</td></tr>
+          <tr><td>${L('Empfohlene obere Grenze', 'Recommended upper bound')}</td><td>${fmtPriceComma(rec.rhigh, pd)} ${anDistText(rec.rhigh, rec.currentPrice)}</td></tr>
+          <tr><td>${L('Spannweite', 'Span')}</td><td>${spanRow}</td></tr>
+          <tr><td>${L('Gewinn pro Grid (nach Gebühren)', 'Profit per grid (after fees)')}</td><td>${btProfitPerGridText(rec.rlow, rec.rhigh, rec.gc, rec.mode, quote, pd)}</td></tr>
+          <tr><td>${L('Empfohlener Mindestinvest', 'Recommended minimum investment')}</td><td>${minInvRow}</td></tr>
+          <tr><td>${L('Betrag pro Grid', 'Amount per grid')}</td><td>${perGridRow}</td></tr>
+          <tr><td>${L('Stop-Loss empfohlen?', 'Stop-loss recommended?')}</td><td>${rec.sl ? L('Ja, ', 'Yes, ') + anSlTpText(rec, 'sl', pd) + anStopPnlText(rec, 'sl', price, quote) : L('Nein, aufgrund der Analyse nicht nötig', 'No, not needed based on the analysis')}</td></tr>
+          <tr><td>${L('Take-Profit empfohlen?', 'Take-profit recommended?')}</td><td>${rec.tp ? L('Ja, ', 'Yes, ') + anSlTpText(rec, 'tp', pd) + anStopPnlText(rec, 'tp', price, quote) : L('Nein, aufgrund der Analyse nicht nötig', 'No, not needed based on the analysis')}</td></tr>
+          <tr><td>${L('Empfohlenes Prüfintervall', 'Recommended check interval')}</td><td>${recommendCheckInterval(a.vol)}</td></tr>
+          <tr><td>${L('Handelsaktivität (Walk-Forward)', 'Trading activity (walk-forward)')}</td><td>${L(`Ø ${rec.avgTradesPerFold.toFixed(1)} abgeschlossene Trades je Zeitfenster (Mindestanforderung: ${rec.minTradesPerFold})`, `Avg. ${rec.avgTradesPerFold.toFixed(1)} completed trades per time window (minimum: ${rec.minTradesPerFold})`)}</td></tr>
         </table>
         ${rec.sl || rec.tp ? anSlTpNote(rec) : ''}
       `;
@@ -1080,7 +1277,7 @@ function initAnalyseTab() {
       loadStatus.textContent = '';
     } catch (e) {
       console.error(e);
-      loadStatus.textContent = 'Fehler: ' + e.message;
+      loadStatus.textContent = L('Fehler: ', 'Error: ') + e.message;
     }
     checkBtn.disabled = false;
   });
@@ -1127,7 +1324,7 @@ function initAnalyseTab() {
 
   $('an-optimizeBtn').addEventListener('click', async () => {
     const optStatus = $('an-optStatus');
-    optStatus.textContent = 'Lade Daten & simuliere …';
+    optStatus.textContent = L('Lade Daten & simuliere …', 'Loading data & simulating …');
     $('an-optimizeBtn').disabled = true;
 
     const fromDate = $('an-fromDate').value;
@@ -1143,7 +1340,7 @@ function initAnalyseTab() {
         candles = await loadKlinesRange(anChosenSymbol, '1h', Date.now() - OPT_SPAN_MS, Date.now(), () => {}); // ~166 Tage
       }
     } catch (e) {
-      optStatus.textContent = 'Fehler beim Laden der Daten';
+      optStatus.textContent = L('Fehler beim Laden der Daten', 'Error loading data');
       $('an-optimizeBtn').disabled = false; return;
     }
 
@@ -1159,38 +1356,39 @@ function initAnalyseTab() {
     const col = (v) => (v >= 0 ? '#3ecf8e' : '#ff6161');
 
     const days = Math.round((best.periodEnd - best.periodStart) / 86400000);
+    const to = L('bis', 'to');
     const periodText = fromDate
       ? (fromTime
-        ? `${fmtDate(best.periodStart)} bis ${fmtDate(best.periodEnd)} (Startzeitpunkt ausgewählt)`
-        : `${anFmtDate(best.periodStart)} bis ${anFmtDate(best.periodEnd)} (Startzeitpunkt ausgewählt)`)
-      : `${anFmtDate(best.periodStart)} bis ${anFmtDate(best.periodEnd)} — Zeitspanne von ca. ${days} Tagen (kein Startzeitpunkt gewählt, es wurde eine ausreichend grosse Datenmenge verwendet)`;
+        ? `${fmtDate(best.periodStart)} ${to} ${fmtDate(best.periodEnd)} ${L('(Startzeitpunkt ausgewählt)', '(start time selected)')}`
+        : `${anFmtDate(best.periodStart)} ${to} ${anFmtDate(best.periodEnd)} ${L('(Startzeitpunkt ausgewählt)', '(start time selected)')}`)
+      : `${anFmtDate(best.periodStart)} ${to} ${anFmtDate(best.periodEnd)} — ${L(`Zeitspanne von ca. ${days} Tagen (kein Startzeitpunkt gewählt, es wurde eine ausreichend grosse Datenmenge verwendet)`, `period of approx. ${days} days (no start time selected, a sufficiently large data set was used)`)}`;
 
     const optNowPrice = anCandles500 ? anCandles500[anCandles500.length - 1].close : candles[candles.length - 1].close;
     rb.innerHTML = `
       <table class="details">
-        ${anModeRow('Grid-Modus', best)}
-        <tr><td>Anzahl Grids</td><td><b>${best.gc}</b></td></tr>
-        <tr><td>Untere Grenze</td><td>${fmtPriceComma(best.rlow, symbolMap.get(anChosenSymbol)?.decimals)} ${anDistText(best.rlow, optNowPrice)}</td></tr>
-        <tr><td>Obere Grenze</td><td>${fmtPriceComma(best.rhigh, symbolMap.get(anChosenSymbol)?.decimals)} ${anDistText(best.rhigh, optNowPrice)}</td></tr>
+        ${anModeRow(L('Grid-Modus', 'Grid mode'), best)}
+        <tr><td>${L('Anzahl Grids', 'Number of grids')}</td><td><b>${best.gc}</b></td></tr>
+        <tr><td>${L('Untere Grenze', 'Lower bound')}</td><td>${fmtPriceComma(best.rlow, symbolMap.get(anChosenSymbol)?.decimals)} ${anDistText(best.rlow, optNowPrice)}</td></tr>
+        <tr><td>${L('Obere Grenze', 'Upper bound')}</td><td>${fmtPriceComma(best.rhigh, symbolMap.get(anChosenSymbol)?.decimals)} ${anDistText(best.rhigh, optNowPrice)}</td></tr>
         <tr><td>Stop-Loss</td><td>${best.sl ? anSlTpText({ ...best, currentPrice: optNowPrice }, 'sl', symbolMap.get(anChosenSymbol)?.decimals) : '–'}</td></tr>
         <tr><td>Take-Profit</td><td>${best.tp ? anSlTpText({ ...best, currentPrice: optNowPrice }, 'tp', symbolMap.get(anChosenSymbol)?.decimals) : '–'}</td></tr>
-        <tr><td>Range-Quelle</td><td>${anRangeSourceText(best)}</td></tr>
-        <tr><td>Walk-Forward-Fenster geprüft</td><td>${best.validatedFolds} (Ø ${best.foldMean.toFixed(2)}%, schlechtestes ${best.foldWorst.toFixed(2)}%)</td></tr>
-        <tr><td>Handelsaktivität (Walk-Forward)</td><td>Ø ${best.avgTradesPerFold.toFixed(1)} abgeschlossene Trades je Zeitfenster (Mindestanforderung: ${best.minTradesPerFold})</td></tr>
+        <tr><td>${L('Range-Quelle', 'Range source')}</td><td>${anRangeSourceText(best)}</td></tr>
+        <tr><td>${L('Walk-Forward-Fenster geprüft', 'Walk-forward windows tested')}</td><td>${best.validatedFolds} (${L('Ø', 'avg.')} ${best.foldMean.toFixed(2)}%, ${L('schlechtestes', 'worst')} ${best.foldWorst.toFixed(2)}%)</td></tr>
+        <tr><td>${L('Handelsaktivität (Walk-Forward)', 'Trading activity (walk-forward)')}</td><td>${L(`Ø ${best.avgTradesPerFold.toFixed(1)} abgeschlossene Trades je Zeitfenster (Mindestanforderung: ${best.minTradesPerFold})`, `Avg. ${best.avgTradesPerFold.toFixed(1)} completed trades per time window (minimum: ${best.minTradesPerFold})`)}</td></tr>
       </table>
       ${best.sl || best.tp ? anSlTpNote(best) : ''}
-      <h4 style="margin:16px 0 6px">Ergebnis${best.stopped ? ' (beendet durch ' + best.stopReason + ')' : ''}</h4>
-      <p class="sub" style="margin:0 0 8px">Zeitraum: ${periodText}</p>
+      <h4 style="margin:16px 0 6px">${L('Ergebnis', 'Result')}${best.stopped ? L(' (beendet durch ', ' (ended by ') + best.stopReason + ')' : ''}</h4>
+      <p class="sub" style="margin:0 0 8px">${L('Zeitraum', 'Period')}: ${periodText}</p>
       <table class="details">
-        <tr><td>Grid-Gewinn (realisiert)</td><td style="color:${col(best.gridProfitPct)}">${best.gridProfitPct.toFixed(2)}%</td></tr>
-        <tr><td>Floating Gewinn/Verlust (offene Positionen)</td><td style="color:${col(best.floatingPLPct)}">${best.floatingPLPct.toFixed(2)}%</td></tr>
-        <tr><td><b>Gesamt-Gewinn</b></td><td><b style="color:${col(best.profitPct)}">${best.profitPct.toFixed(2)}%</b></td></tr>
+        <tr><td>${L('Grid-Gewinn (realisiert)', 'Grid profit (realized)')}</td><td style="color:${col(best.gridProfitPct)}">${best.gridProfitPct.toFixed(2)}%</td></tr>
+        <tr><td>${L('Floating Gewinn/Verlust (offene Positionen)', 'Floating profit/loss (open positions)')}</td><td style="color:${col(best.floatingPLPct)}">${best.floatingPLPct.toFixed(2)}%</td></tr>
+        <tr><td><b>${L('Gesamt-Gewinn', 'Total profit')}</b></td><td><b style="color:${col(best.profitPct)}">${best.profitPct.toFixed(2)}%</b></td></tr>
         <tr><td>Max. Drawdown</td><td style="color:var(--bad)">${best.maxDrawdownPct.toFixed(2)}%</td></tr>
-        <tr><td>Buy &amp; Hold zum Vergleich</td><td style="color:${col(best.bhProfitPct)}">${best.bhProfitPct.toFixed(2)}%</td></tr>
-        <tr><td>Grid-Bot vs. Buy &amp; Hold</td><td style="color:${col(best.profitPct - best.bhProfitPct)}">${(best.profitPct - best.bhProfitPct >= 0 ? '+' : '')}${(best.profitPct - best.bhProfitPct).toFixed(2)} Prozentpunkte</td></tr>
+        <tr><td>${L('Buy &amp; Hold zum Vergleich', 'Buy &amp; hold for comparison')}</td><td style="color:${col(best.bhProfitPct)}">${best.bhProfitPct.toFixed(2)}%</td></tr>
+        <tr><td>Grid-Bot vs. Buy &amp; Hold</td><td style="color:${col(best.profitPct - best.bhProfitPct)}">${(best.profitPct - best.bhProfitPct >= 0 ? '+' : '')}${(best.profitPct - best.bhProfitPct).toFixed(2)} ${L('Prozentpunkte', 'percentage points')}</td></tr>
       </table>
-      <p class="sub" style="margin-top:10px">Simulation eines ${best.mode === 'arithmetic' ? 'arithmetischen' : 'geometrischen'} Grids wie bei Binance (gleiche Menge pro Order, 0.1% Gebühr) auf historischen 1h-Kerzen. Keine Anlageberatung, keine Garantie für zukünftige Performance.</p>
-      <h4 style="margin:16px 0 6px">Gewinnverlauf</h4>
+      <p class="sub" style="margin-top:10px">${L(`Simulation eines ${best.mode === 'arithmetic' ? 'arithmetischen' : 'geometrischen'} Grids wie bei Binance (gleiche Menge pro Order, 0.1% Gebühr) auf historischen 1h-Kerzen. Keine Anlageberatung, keine Garantie für zukünftige Performance.`, `Simulation of an ${best.mode === 'arithmetic' ? 'arithmetic' : 'geometric'} grid as on Binance (same quantity per order, 0.1% fee) on historical 1h candles. Not investment advice, no guarantee of future performance.`)}</p>
+      <h4 style="margin:16px 0 6px">${L('Gewinnverlauf', 'Profit over time')}</h4>
       ${anDrawProfitChart(bestWithCurve.curve)}
     `;
     $('an-resultCard').classList.remove('hidden');
@@ -1243,9 +1441,9 @@ async function btOnSymbolChange() {
 }
 
 const TREND = {
-  up: { label: 'Aufwärtstrend', cls: 'pos' },
-  down: { label: 'Abwärtstrend', cls: 'neg' },
-  flat: { label: 'Seitwärtstrend', cls: 'flat' },
+  up: { label: L('Aufwärtstrend', 'Uptrend'), cls: 'pos' },
+  down: { label: L('Abwärtstrend', 'Downtrend'), cls: 'neg' },
+  flat: { label: L('Seitwärtstrend', 'Sideways'), cls: 'flat' },
 };
 
 function linReg(ys) {
@@ -1291,25 +1489,25 @@ function futureTrend(context, startTime) {
 
   const fitS = linReg(closes.slice(-nSpan));
   const projS = (fitS.slope * nSpan / last) * 100;
-  signals.push({ name: `Regression kurz (${nSpan} Kerzen), fortgeschrieben`, value: projS, dir: classify(projS, vol) });
+  signals.push({ name: L(`Regression kurz (${nSpan} Kerzen), fortgeschrieben`, `Short regression (${nSpan} candles), extrapolated`), value: projS, dir: classify(projS, vol) });
 
   const fitL = linReg(closes);
   const projL = (fitL.slope * nSpan / last) * 100;
-  signals.push({ name: `Regression lang (${closes.length} Kerzen), fortgeschrieben`, value: projL, dir: classify(projL, vol) });
+  signals.push({ name: L(`Regression lang (${closes.length} Kerzen), fortgeschrieben`, `Long regression (${closes.length} candles), extrapolated`), value: projL, dir: classify(projL, vol) });
 
   const sma = (n) => closes.slice(-n).reduce((a, b) => a + b, 0) / Math.min(n, closes.length);
   const dS = ((last - sma(nSpan)) / sma(nSpan)) * 100;
-  signals.push({ name: 'Preis vs. Durchschnitt (1× Zeitraum)', value: dS, dir: classify(dS, vol) });
+  signals.push({ name: L('Preis vs. Durchschnitt (1× Zeitraum)', 'Price vs. average (1× period)'), value: dS, dir: classify(dS, vol) });
   if (closes.length >= 2 * nSpan) {
     const dL = ((last - sma(2 * nSpan)) / sma(2 * nSpan)) * 100;
-    signals.push({ name: 'Preis vs. Durchschnitt (2× Zeitraum)', value: dL, dir: classify(dL, vol) });
+    signals.push({ name: L('Preis vs. Durchschnitt (2× Zeitraum)', 'Price vs. average (2× period)'), value: dL, dir: classify(dL, vol) });
   }
 
   const half = Math.floor(nSpan / 2);
   const a = closes.slice(-nSpan, -half), b = closes.slice(-half);
   const mA = a.reduce((x, y) => x + y, 0) / a.length, mB = b.reduce((x, y) => x + y, 0) / b.length;
   const mom = ((mB - mA) / mA) * 100;
-  signals.push({ name: 'Momentum (2. Hälfte vs. 1. Hälfte)', value: mom, dir: classify(mom, vol) });
+  signals.push({ name: L('Momentum (2. Hälfte vs. 1. Hälfte)', 'Momentum (2nd half vs. 1st half)'), value: mom, dir: classify(mom, vol) });
 
   const score = signals.reduce((s, x) => s + (x.dir === 'up' ? 1 : x.dir === 'down' ? -1 : 0), 0);
   const need = Math.ceil(signals.length / 2);
@@ -1320,11 +1518,11 @@ function futureTrend(context, startTime) {
 
 function spanLabel(ms) {
   const days = ms / 86400000;
-  if (days < 2) return `${Math.round(days * 24)} Stunden`;
-  if (days < 14) return `${Math.round(days)} Tage`;
-  if (days < 60) return `${(days / 7).toFixed(1).replace(/\.0$/, '')} Wochen`;
-  if (days < 730) return `${(days / 30.44).toFixed(1).replace(/\.0$/, '')} Monate`;
-  return `${(days / 365.25).toFixed(1).replace(/\.0$/, '')} Jahre`;
+  if (days < 2) return `${Math.round(days * 24)} ${L('Stunden', 'hours')}`;
+  if (days < 14) return `${Math.round(days)} ${L('Tage', 'days')}`;
+  if (days < 60) return `${(days / 7).toFixed(1).replace(/\.0$/, '')} ${L('Wochen', 'weeks')}`;
+  if (days < 730) return `${(days / 30.44).toFixed(1).replace(/\.0$/, '')} ${L('Monate', 'months')}`;
+  return `${(days / 365.25).toFixed(1).replace(/\.0$/, '')} ${L('Jahre', 'years')}`;
 }
 
 function btSetTrend(id, dir) {
@@ -1337,19 +1535,19 @@ function btSetTrend(id, dir) {
 function btRenderTrend(past, future, span) {
   btSetTrend('bt-t-past', past.dir);
   $('bt-t-past-sub').textContent =
-    `Regression ${signed(past.regChange)} % · Start→Ende ${signed(past.rawChange)} % · Volatilität ${fmt(past.vol, 1)} %`;
+    L(`Regression ${signed(past.regChange)} % · Start→Ende ${signed(past.rawChange)} % · Volatilität ${fmt(past.vol, 1)} %`, `Regression ${signed(past.regChange)} % · start→end ${signed(past.rawChange)} % · volatility ${fmt(past.vol, 1)} %`);
 
-  $('bt-t-future-label').textContent = `Ausblick (nächste ${spanLabel(span)})`;
+  $('bt-t-future-label').textContent = L(`Ausblick (nächste ${spanLabel(span)})`, `Outlook (next ${spanLabel(span)})`);
   if (!future) {
     $('bt-t-future').textContent = '–';
     $('bt-t-future').className = 'kpi-value';
-    $('bt-t-future-sub').textContent = 'Zu wenig Kursdaten für einen Ausblick.';
+    $('bt-t-future-sub').textContent = L('Zu wenig Kursdaten für einen Ausblick.', 'Not enough price data for an outlook.');
     $('bt-t-signals').innerHTML = '';
     return;
   }
   btSetTrend('bt-t-future', future.dir);
   $('bt-t-future-sub').textContent =
-    `Projizierte Veränderung ≈ ${signed(future.projected, 1)} % · Signal-Score ${future.score > 0 ? '+' : ''}${future.score} von ±${future.signals.length}`;
+    L(`Projizierte Veränderung ≈ ${signed(future.projected, 1)} % · Signal-Score ${future.score > 0 ? '+' : ''}${future.score} von ±${future.signals.length}`, `Projected change ≈ ${signed(future.projected, 1)} % · signal score ${future.score > 0 ? '+' : ''}${future.score} of ±${future.signals.length}`);
   $('bt-t-signals').innerHTML = future.signals
     .map((s) => `<tr><td>${s.name}</td><td><span class="${TREND[s.dir].cls}">${TREND[s.dir].label}</span> (${signed(s.value, 1)} %)</td></tr>`)
     .join('');
@@ -1367,9 +1565,20 @@ function btSetStatus(msg) {
 function btProfitPerGridText(lower, upper, grids, mode, q, d) {
   const p = gridProfitPerGridRange(lower, upper, grids, mode);
   if (mode === 'arithmetic') {
-    return `${fmt(p.min, 2)} – ${fmt(p.max, 2)} % <span class="status">(Abstand ${fmtPrice((upper - lower) / grids, d)} ${q} pro Grid; oben am wenigsten, unten am meisten)</span>`;
+    return `${fmt(p.min, 2)} – ${fmt(p.max, 2)} % <span class="status">${L(`(Abstand ${fmtPrice((upper - lower) / grids, d)} ${q} pro Grid; oben am wenigsten, unten am meisten)`, `(spacing ${fmtPrice((upper - lower) / grids, d)} ${q} per grid; least at the top, most at the bottom)`)}</span>`;
   }
-  return `${fmt(p.min, 2)} % <span class="status">(Abstand ${fmt((Math.pow(upper / lower, 1 / grids) - 1) * 100, 2)} % pro Grid)</span>`;
+  return `${fmt(p.min, 2)} % <span class="status">(${L('Abstand', 'spacing')} ${fmt((Math.pow(upper / lower, 1 / grids) - 1) * 100, 2)} % ${L('pro Grid', 'per grid')})</span>`;
+}
+
+// Zeit ausserhalb der Grids: Anzahl Kerzen mit Schlusskurs unter der unteren bzw. über der oberen
+// Grenze × Kerzendauer (Auflösung = gewähltes Intervall), bis zum Stopp durch Stop-Loss/Take-Profit
+function btOutOfRangeText(r, candles, days) {
+  const barMs = candles.length > 1 ? candles[1].t - candles[0].t : 0;
+  const totalH = Math.round(r.outOfRange * barMs / 3600000);
+  const d = Math.floor(totalH / 24), h = totalH % 24;
+  const dur = L(`${d} ${d === 1 ? 'Tag' : 'Tage'} ${h} ${h === 1 ? 'Stunde' : 'Stunden'}`, `${d} ${d === 1 ? 'day' : 'days'} ${h} ${h === 1 ? 'hour' : 'hours'}`);
+  const share = days > 0 ? Math.min(100, totalH / (days * 24) * 100) : 0;
+  return `${dur} <span class="status">${L(`(${fmt(share, 1)} % der Laufzeit; ${r.outOfRange} von ${r.used} Kerzen mit Schlusskurs ausserhalb)`, `(${fmt(share, 1)} % of runtime; ${r.outOfRange} of ${r.used} candles closed outside)`)}</span>`;
 }
 
 function btRenderResults(r, ctx) {
@@ -1381,13 +1590,13 @@ function btRenderResults(r, ctx) {
 
   $('bt-summary').textContent =
     `${b}/${q} · ${fmtDate(candles[0].t)} – ${fmtDate(candles[candles.length - 1].t)} · ` +
-    `${candles.length} Kerzen (${interval}) · Range ${fmtPrice(lower, d)} – ${fmtPrice(upper, d)} · ${grids} Grids ${gridModeLabel(mode).toLowerCase()}`;
+    `${candles.length} ${L('Kerzen', 'candles')} (${interval}) · Range ${fmtPrice(lower, d)} – ${fmtPrice(upper, d)} · ${grids} Grids ${gridModeLabel(mode).toLowerCase()}`;
 
   $('bt-r-total').textContent = `${signed(r.total)} ${q}`;
   colorize($('bt-r-total'), r.total);
-  $('bt-r-total-pct').textContent = `${signed(pct)} % auf ${fmt(investment)} ${q}`;
+  $('bt-r-total-pct').textContent = `${signed(pct)} % ${L('auf', 'on')} ${fmt(investment)} ${q}`;
   $('bt-r-trades').textContent = r.trades;
-  $('bt-r-trades-sub').textContent = `${r.buys} Käufe · ${r.sells} Verkäufe` + (r.initialBuyCost ? ' · + 1 Startkauf' : '');
+  $('bt-r-trades-sub').textContent = `${r.buys} ${L('Käufe', 'buys')} · ${r.sells} ${L('Verkäufe', 'sells')}` + (r.initialBuyCost ? L(' · + 1 Startkauf', ' · + 1 initial buy') : '');
   $('bt-r-realized').textContent = `${signed(r.realized)} ${q}`;
   colorize($('bt-r-realized'), r.realized);
   $('bt-r-unrealized').textContent = `${signed(r.unrealized)} ${q}`;
@@ -1400,10 +1609,10 @@ function btRenderResults(r, ctx) {
   $('bt-r-market').textContent = `${signed(r.marketPnl)} ${q}`;
   colorize($('bt-r-market'), r.marketPnl);
   $('bt-r-market-sub').textContent =
-    `${signed(r.marketPnl / investment * 100)} % · Startbestand ${fmt(r.startBase, 6)} ${b}, Kurs ${fmtPrice(r.p0, d)} → ${fmtPrice(r.last, d)}`;
+    L(`${signed(r.marketPnl / investment * 100)} % · Startbestand ${fmt(r.startBase, 6)} ${b}, Kurs ${fmtPrice(r.p0, d)} → ${fmtPrice(r.last, d)}`, `${signed(r.marketPnl / investment * 100)} % · initial holdings ${fmt(r.startBase, 6)} ${b}, price ${fmtPrice(r.p0, d)} → ${fmtPrice(r.last, d)}`);
   $('bt-r-grid').textContent = `${signed(r.gridPnl)} ${q}`;
   colorize($('bt-r-grid'), r.gridPnl);
-  $('bt-r-grid-sub').textContent = `${signed(r.gridPnl / investment * 100)} % · Mehr-/Minderwert gegenüber Startbestand ohne Handel`;
+  $('bt-r-grid-sub').textContent = L(`${signed(r.gridPnl / investment * 100)} % · Mehr-/Minderwert gegenüber Startbestand ohne Handel`, `${signed(r.gridPnl / investment * 100)} % · gain/loss vs. holding the initial position without trading`);
 
   const vsHodl = r.total - r.hodlPnl;
   $('bt-r-vshodl').textContent = `${signed(vsHodl)} ${q}`;
@@ -1411,20 +1620,21 @@ function btRenderResults(r, ctx) {
   $('bt-r-vshodl-sub').textContent = `Buy & Hold: ${signed(r.hodlPnl)} ${q} (${signed(r.hodlPnl / investment * 100)} %)`;
 
   const rows = [
-    ['Grid-Modus', gridModeLabel(mode)],
-    ['Gewinn pro Grid (nach Gebühren)', btProfitPerGridText(lower, upper, grids, mode, q, d)],
-    ['Menge pro Order', `${fmt(r.q, 6)} ${b}`],
-    ['Startpreis', `${fmtPrice(r.p0, d)} ${q}${botStart ? ' <span class="status">(Startkurs des hinterlegten Bots)</span>' : ''}`],
+    [L('Grid-Modus', 'Grid mode'), gridModeLabel(mode)],
+    [L('Gewinn pro Grid (nach Gebühren)', 'Profit per grid (after fees)'), btProfitPerGridText(lower, upper, grids, mode, q, d)],
+    [L('Menge pro Order', 'Quantity per order'), `${fmt(r.q, 6)} ${b}`],
+    [L('Startpreis', 'Start price'), `${fmtPrice(r.p0, d)} ${q}${botStart ? ` <span class="status">${L('(Startkurs des hinterlegten Bots)', '(start price of the saved bot)')}</span>` : ''}`],
     ['Stop-Loss / Take-Profit', `${stopLoss ? fmtPrice(stopLoss, d) : '–'} / ${takeProfit ? fmtPrice(takeProfit, d) : '–'} ${q}`],
-    ['Bot beendet durch', r.stopped ? `<b>${r.stopReason}</b> am ${fmtDate(r.stopTime)} zu ${fmtPrice(r.stopPrice, d)} ${q} (Bestand verkauft)` : '–'],
-    ['Endpreis', `${fmtPrice(r.last, d)} ${q}`],
-    ['Tief / Hoch im Zeitraum', `${fmtPrice(r.minPrice, d)} / ${fmtPrice(r.maxPrice, d)} ${q}`],
-    ['Kursveränderung im Zeitraum', `<span class="${r.priceChangePct >= 0 ? 'pos' : 'neg'}">${signed(r.priceChangePct)} %</span> <span class="status">(${fmtPrice(r.p0, d)} → ${fmtPrice(candles[candles.length - 1].c, d)} ${q})</span>`],
-    ['Startkauf (Bestand für Sell-Orders)', r.initialBuyCost ? `${fmt(r.initialBuyCost)} ${q}` : '–'],
-    ['Endbestand', `${fmt(r.quote)} ${q} + ${fmt(r.base, 6)} ${b}`],
-    ['Endwert (zum Endpreis)', `${fmt(r.finalValue)} ${q}`],
-    ['Kerzen ausserhalb der Range', `${fmt(r.outOfRangePct, 1)} %`],
-    ['Zeitraum', `${fmt(days, 1)} Tage`],
+    [L('Bot beendet durch', 'Bot ended by'), r.stopped ? L(`<b>${r.stopReason}</b> am ${fmtDate(r.stopTime)} zu ${fmtPrice(r.stopPrice, d)} ${q} (Bestand verkauft)`, `<b>${r.stopReason}</b> on ${fmtDate(r.stopTime)} at ${fmtPrice(r.stopPrice, d)} ${q} (holdings sold)`) : '–'],
+    [L('Endpreis', 'End price'), `${fmtPrice(r.last, d)} ${q}`],
+    [L('Tief / Hoch im Zeitraum', 'Low / high in period'), `${fmtPrice(r.minPrice, d)} / ${fmtPrice(r.maxPrice, d)} ${q}`],
+    [L('Kursveränderung im Zeitraum', 'Price change in period'), `<span class="${r.priceChangePct >= 0 ? 'pos' : 'neg'}">${signed(r.priceChangePct)} %</span> <span class="status">(${fmtPrice(r.p0, d)} → ${fmtPrice(candles[candles.length - 1].c, d)} ${q})</span>`],
+    [L('Startkauf (Bestand für Sell-Orders)', 'Initial buy (holdings for sell orders)'), r.initialBuyCost ? `${fmt(r.initialBuyCost)} ${q}` : '–'],
+    [L('Endbestand', 'Final holdings'), `${fmt(r.quote)} ${q} + ${fmt(r.base, 6)} ${b}`],
+    [L('Endwert (zum Endpreis)', 'Final value (at end price)'), `${fmt(r.finalValue)} ${q}`],
+    [L('Kerzen ausserhalb der Range', 'Candles outside the range'), `${fmt(r.outOfRangePct, 1)} %`],
+    [L('Zeitraum', 'Period'), `${fmt(days, 1)} ${L('Tage', 'days')}`],
+    [L('Kurs ausserhalb der Grids', 'Price outside the grids'), btOutOfRangeText(r, candles, days)],
   ];
   $('bt-details').innerHTML = rows.map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('');
 
@@ -1487,19 +1697,19 @@ function btDrawChart(candles, levels, lower, upper, stopLoss = null, takeProfit 
   if (!stopLoss || stopLoss > rawMin) labelPrices.push(rawMin);
   if (!takeProfit || takeProfit < rawMax) labelPrices.push(rawMax);
   for (const p of labelPrices) {
-    ctx.fillText(p.toFixed(d).replace('.', ','), pad.l - 6, y(p) + 4);
+    ctx.fillText(p.toFixed(d).replace('.', DEC), pad.l - 6, y(p) + 4);
   }
   // Beschriftung rechts über der Linie, z. B. "SL 103,46"
   ctx.textAlign = 'right';
   for (const [p, color, label] of stops) {
     ctx.fillStyle = color;
-    ctx.fillText(`${label} ${p.toFixed(d).replace('.', ',')}`, W - pad.r - 4, y(p) - 5);
+    ctx.fillText(`${label} ${p.toFixed(d).replace('.', DEC)}`, W - pad.r - 4, y(p) - 5);
   }
   ctx.fillStyle = '#9aa3af';
   ctx.textAlign = 'left';
-  ctx.fillText(new Date(candles[0].t).toLocaleDateString('de-CH'), pad.l, H - 6);
+  ctx.fillText(new Date(candles[0].t).toLocaleDateString(DATE_LOCALE), pad.l, H - 6);
   ctx.textAlign = 'right';
-  ctx.fillText(new Date(candles[candles.length - 1].t).toLocaleDateString('de-CH'), W - pad.r, H - 6);
+  ctx.fillText(new Date(candles[candles.length - 1].t).toLocaleDateString(DATE_LOCALE), W - pad.r, H - 6);
 }
 
 // Gewinnverlauf des Grid-Bots in % des Investments
@@ -1544,9 +1754,9 @@ function btDrawProfitChart(curve) {
 
   ctx.fillStyle = '#9aa3af';
   ctx.textAlign = 'left';
-  ctx.fillText(new Date(curve[0].time).toLocaleDateString('de-CH'), pad.l, H - 6);
+  ctx.fillText(new Date(curve[0].time).toLocaleDateString(DATE_LOCALE), pad.l, H - 6);
   ctx.textAlign = 'right';
-  ctx.fillText(new Date(curve[curve.length - 1].time).toLocaleDateString('de-CH'), W - pad.r, H - 6);
+  ctx.fillText(new Date(curve[curve.length - 1].time).toLocaleDateString(DATE_LOCALE), W - pad.r, H - 6);
 }
 
 async function btOnSubmit(ev) {
@@ -1564,23 +1774,23 @@ async function btOnSubmit(ev) {
   const stopLoss = parseNum($('bt-sl').value) || null;
   const takeProfit = parseNum($('bt-tp').value) || null;
 
-  if (!sym) return btShowError('Bitte ein Währungspaar wählen.');
-  if (!(lower > 0) || !(upper > lower)) return btShowError('Obere Preisgrenze muss grösser als die untere sein.');
-  if (!(grids >= 2)) return btShowError('Mindestens 2 Grids.');
-  if (!(investment > 0)) return btShowError('Investment muss grösser als 0 sein.');
-  if (!(startTime < endTime)) return btShowError('Startzeitpunkt muss in der Vergangenheit liegen.');
+  if (!sym) return btShowError(L('Bitte ein Währungspaar wählen.', 'Please select a trading pair.'));
+  if (!(lower > 0) || !(upper > lower)) return btShowError(L('Obere Preisgrenze muss grösser als die untere sein.', 'Upper price bound must be greater than the lower one.'));
+  if (!(grids >= 2)) return btShowError(L('Mindestens 2 Grids.', 'At least 2 grids.'));
+  if (!(investment > 0)) return btShowError(L('Investment muss grösser als 0 sein.', 'Investment must be greater than 0.'));
+  if (!(startTime < endTime)) return btShowError(L('Startzeitpunkt muss in der Vergangenheit liegen.', 'Start time must be in the past.'));
   // Binance-Regel (Spot-Grid-FAQ): SL unter der unteren, TP über der oberen Grenze
-  if (stopLoss && !(stopLoss < lower)) return btShowError('Stop-Loss muss unter der unteren Preisgrenze liegen (Binance-Vorgabe).');
-  if (takeProfit && !(takeProfit > upper)) return btShowError('Take-Profit muss über der oberen Preisgrenze liegen (Binance-Vorgabe).');
+  if (stopLoss && !(stopLoss < lower)) return btShowError(L('Stop-Loss muss unter der unteren Preisgrenze liegen (Binance-Vorgabe).', 'Stop-loss must be below the lower price bound (Binance rule).'));
+  if (takeProfit && !(takeProfit > upper)) return btShowError(L('Take-Profit muss über der oberen Preisgrenze liegen (Binance-Vorgabe).', 'Take-profit must be above the upper price bound (Binance rule).'));
 
   const interval = pickInterval((endTime - startTime) / 1000);
   $('bt-run').disabled = true;
   $('bt-results').classList.add('hidden');
   try {
-    btSetStatus(`Lade Kerzen (${interval}) …`);
-    const candles = await loadKlinesRange(sym.symbol, interval, startTime, endTime, (n) => btSetStatus(`Lade Kerzen (${interval}) … ${n}`));
-    if (candles.length < 2) throw new Error('Keine Kursdaten für diesen Zeitraum gefunden.');
-    btSetStatus('Simuliere …');
+    btSetStatus(L(`Lade Kerzen (${interval}) …`, `Loading candles (${interval}) …`));
+    const candles = await loadKlinesRange(sym.symbol, interval, startTime, endTime, (n) => btSetStatus(L(`Lade Kerzen (${interval}) … ${n}`, `Loading candles (${interval}) … ${n}`)));
+    if (candles.length < 2) throw new Error(L('Keine Kursdaten für diesen Zeitraum gefunden.', 'No price data found for this period.'));
+    btSetStatus(L('Simuliere …', 'Simulating …'));
     // Aus dem Monitoring übernommener Bot: echter Startkurs statt Eröffnungskurs der ersten Kerze
     const botStart = btBotStart && btBotStart.symbol === sym.symbol && btBotStart.startTime === startTime ? btBotStart.price : null;
     const result = simulateGrid(candles, { lower, upper, grids, investment, stopLoss, takeProfit, startPrice: botStart, mode, recordCurve: true });
@@ -1588,7 +1798,7 @@ async function btOnSubmit(ev) {
 
     const span = endTime - startTime;
     const ctxInterval = pickInterval((3 * span) / 1000);
-    btSetStatus(`Lade Trend-Daten (${ctxInterval}) …`);
+    btSetStatus(L(`Lade Trend-Daten (${ctxInterval}) …`, `Loading trend data (${ctxInterval}) …`));
     let future = null;
     try {
       const context = await loadKlinesRange(sym.symbol, ctxInterval, startTime - 2 * span, endTime, () => {});
@@ -1597,9 +1807,9 @@ async function btOnSubmit(ev) {
       future = null;
     }
     btRenderTrend(pastTrend(candles), future, span);
-    btSetStatus(`Fertig – ${candles.length} Kerzen ausgewertet.`);
+    btSetStatus(L(`Fertig – ${candles.length} Kerzen ausgewertet.`, `Done – ${candles.length} candles evaluated.`));
   } catch (e) {
-    btShowError(`Fehler: ${e.message}`);
+    btShowError(L(`Fehler: ${e.message}`, `Error: ${e.message}`));
     btSetStatus('');
   } finally {
     $('bt-run').disabled = false;
@@ -1677,7 +1887,7 @@ function binanceTradeUrl(symbol, quote = '') {
 }
 // Paarname als Link, der den Binance-Chart in einem neuen Tab öffnet
 function pairLink(symbol, label = symbol, quote = '') {
-  return `<a class="pair-link" href="${binanceTradeUrl(symbol, quote)}" target="_blank" rel="noopener noreferrer" title="Chart auf Binance öffnen">${escapeHtml(label)}</a>`;
+  return `<a class="pair-link" href="${binanceTradeUrl(symbol, quote)}" target="_blank" rel="noopener noreferrer" title="${L('Chart auf Binance öffnen', 'Open chart on Binance')}">${escapeHtml(label)}</a>`;
 }
 
 // Quote-Asset eines Bots (für Einheiten wie "81 USDT"); ältere Einträge haben es nicht gespeichert.
@@ -1689,7 +1899,7 @@ function moBotQuote(b) {
 function moFmtAmount(n) {
   const a = Math.abs(n);
   const str = a >= 1 || a === 0 ? a.toFixed(2) : String(Number(a.toPrecision(3)));
-  return str.replace('.', ',');
+  return str.replace('.', DEC);
 }
 
 const REMOVED_BOTS_KEY = 'gridbot-suite-bots-removed';
@@ -1741,10 +1951,10 @@ async function moPersistNow() {
   try {
     const res = await fetch(MO_STORE_URL, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: moStorePayload() });
     if (!res.ok) throw new Error('HTTP ' + res.status);
-    const at = new Date().toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    moSetStoreStatus(`Gespeichert im Browser und in data/bots.json (zuletzt ${at}).`);
+    const at = new Date().toLocaleTimeString(DATE_LOCALE, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    moSetStoreStatus(L(`Gespeichert im Browser und in data/bots.json (zuletzt ${at}).`, `Saved in the browser and in data/bots.json (last ${at}).`));
   } catch (e) {
-    moSetStoreStatus(`Speichern in data/bots.json fehlgeschlagen (${e.message}) – Änderungen sind nur im Browser gespeichert.`, true);
+    moSetStoreStatus(L(`Speichern in data/bots.json fehlgeschlagen (${e.message}) – Änderungen sind nur im Browser gespeichert.`, `Saving to data/bots.json failed (${e.message}) – changes are only saved in the browser.`), true);
   }
 }
 
@@ -1760,8 +1970,8 @@ async function moLoadFromStore() {
     moStoreAvailable = false;
     const isLocal = ['localhost', '127.0.0.1', ''].includes(location.hostname);
     moSetStoreStatus(isLocal
-      ? 'Nur im Browser gespeichert – App über start.bat starten, damit die Liste auch in data/bots.json im App-Ordner gespeichert wird.'
-      : 'Online-Version: Bot-Liste wird nur in diesem Browser gespeichert (nicht zwischen Geräten synchronisiert).', isLocal);
+      ? L('Nur im Browser gespeichert – App über start.bat starten, damit die Liste auch in data/bots.json im App-Ordner gespeichert wird.', 'Saved in the browser only – start the app via start.bat so the list is also saved to data/bots.json in the app folder.')
+      : L('Online-Version: Bot-Liste wird nur in diesem Browser gespeichert (nicht zwischen Geräten synchronisiert).', 'Online version: the bot list is only saved in this browser (not synced between devices).'), isLocal);
     return;
   }
   moStoreAvailable = true;
@@ -1784,11 +1994,11 @@ async function moLoadFromStore() {
     // Ältere Dateien (oder ein noch nicht neu gestarteter server.py) haben kein Startkapital -> Browser-Wert behalten
     if (data.settings?.equityStart > 0) localStorage.setItem(EQ_START_KEY, String(data.settings.equityStart));
     if (data.savedAt) localStorage.setItem(MO_LOCAL_SAVED_KEY, data.savedAt);
-    const at = data.savedAt ? new Date(data.savedAt).toLocaleString('de-CH', { dateStyle: 'medium', timeStyle: 'short' }) : '–';
-    moSetStoreStatus(`Geladen aus data/bots.json (Stand ${at}), Änderungen werden automatisch dort gespeichert.`);
+    const at = data.savedAt ? new Date(data.savedAt).toLocaleString(DATE_LOCALE, { dateStyle: 'medium', timeStyle: 'short' }) : '–';
+    moSetStoreStatus(L(`Geladen aus data/bots.json (Stand ${at}), Änderungen werden automatisch dort gespeichert.`, `Loaded from data/bots.json (as of ${at}), changes are saved there automatically.`));
   } catch (e) {
     moStoreAvailable = false;
-    moSetStoreStatus(`data/bots.json konnte nicht gelesen werden (${e.message}) – es wird nur im Browser gespeichert.`, true);
+    moSetStoreStatus(L(`data/bots.json konnte nicht gelesen werden (${e.message}) – es wird nur im Browser gespeichert.`, `data/bots.json could not be read (${e.message}) – saving in the browser only.`), true);
   }
 }
 
@@ -1818,7 +2028,7 @@ function moOpenNoteDialog(opts) {
   $('mo-noteTitle').textContent = opts.title;
   $('mo-noteHint').textContent = opts.hint || '';
   $('mo-noteHint').classList.toggle('hidden', !opts.hint);
-  $('mo-noteSave').textContent = opts.saveLabel || 'Speichern';
+  $('mo-noteSave').textContent = opts.saveLabel || L('Speichern', 'Save');
   $('mo-noteSave').className = opts.danger ? 'danger small' : '';
   text.value = opts.value || '';
   err.classList.add('hidden');
@@ -1835,7 +2045,7 @@ function moOpenNoteDialog(opts) {
       e.preventDefault();
       const v = text.value.trim();
       if (opts.required && !v) {
-        err.textContent = 'Bitte eine Notiz eingeben – ohne Notiz kann der Bot nicht entfernt werden.';
+        err.textContent = L('Bitte eine Notiz eingeben – ohne Notiz kann der Bot nicht entfernt werden.', 'Please enter a note – the bot cannot be removed without a note.');
         err.classList.remove('hidden');
         text.focus();
         return;
@@ -1854,7 +2064,7 @@ function moOpenNoteDialog(opts) {
 async function moEditNote(id) {
   const bot = loadBots().find((b) => String(b.id) === id);
   if (!bot) return;
-  const note = await moOpenNoteDialog({ title: `Notiz · ${bot.symbol}`, value: bot.note || '' });
+  const note = await moOpenNoteDialog({ title: L(`Notiz · ${bot.symbol}`, `Note · ${bot.symbol}`), value: bot.note || '' });
   if (note == null) return;
   const bots = loadBots();
   const b = bots.find((x) => String(x.id) === id);
@@ -1870,8 +2080,8 @@ function moOpenStopDialog(bot) {
   const dlg = $('mo-stopDialog');
   const err = $('mo-stopError');
   const radios = [...document.querySelectorAll('input[name="mo-pnlSign"]')];
-  $('mo-stopTitle').textContent = `${bot.symbol} · Bot stoppen`;
-  $('mo-stopUnit').textContent = moBotQuote(bot) || 'Quote-Asset';
+  $('mo-stopTitle').textContent = L(`${bot.symbol} · Bot stoppen`, `${bot.symbol} · Stop bot`);
+  $('mo-stopUnit').textContent = moBotQuote(bot) || L('Quote-Asset', 'quote asset');
   radios.forEach((r) => { r.checked = false; });
   $('mo-stopAmount').value = '';
   $('mo-stopTrades').value = '';
@@ -1894,10 +2104,10 @@ function moOpenStopDialog(bot) {
       const tradesRaw = $('mo-stopTrades').value.trim();
       const trades = /^\d+$/.test(tradesRaw) ? parseInt(tradesRaw, 10) : NaN;
       const removeNote = $('mo-stopNote').value.trim();
-      if (!sign) return fail('Bitte wählen, ob Gewinn oder Verlust gemacht wurde.', radios[0]);
-      if (!(amount >= 0)) return fail('Bitte den Betrag als Zahl angeben (z. B. 4,20).', $('mo-stopAmount'));
-      if (!(trades >= 0)) return fail('Bitte die Anzahl Trades als ganze Zahl angeben (z. B. 12).', $('mo-stopTrades'));
-      if (!removeNote) return fail('Bitte eine Notiz eingeben – ohne Notiz kann der Bot nicht gestoppt werden.', $('mo-stopNote'));
+      if (!sign) return fail(L('Bitte wählen, ob Gewinn oder Verlust gemacht wurde.', 'Please select whether a profit or a loss was made.'), radios[0]);
+      if (!(amount >= 0)) return fail(L('Bitte den Betrag als Zahl angeben (z. B. 4,20).', 'Please enter the amount as a number (e.g. 4.20).'), $('mo-stopAmount'));
+      if (!(trades >= 0)) return fail(L('Bitte die Anzahl Trades als ganze Zahl angeben (z. B. 12).', 'Please enter the number of trades as a whole number (e.g. 12).'), $('mo-stopTrades'));
+      if (!removeNote) return fail(L('Bitte eine Notiz eingeben – ohne Notiz kann der Bot nicht gestoppt werden.', 'Please enter a note – the bot cannot be stopped without a note.'), $('mo-stopNote'));
       cleanup({ removeNote, pnl: +sign.value * amount, trades });
     };
     const onCancel = (e) => { if (e) e.preventDefault(); cleanup(null); };
@@ -1968,20 +2178,20 @@ async function moFillRemovedSuitability() {
 }
 
 function moSuitText(v) {
-  if (!v || !v.cls) return '<span class="note-empty">nicht ermittelbar</span>';
+  if (!v || !v.cls) return `<span class="note-empty">${L('nicht ermittelbar', 'not determinable')}</span>`;
   return `<span class="suit ${v.cls}">${verdictLabel(v.cls)}${v.score != null ? ' (' + v.score + ')' : ''}</span>`;
 }
 
 function moSuitCell(b) {
   if (!b.suitStart || !b.suitEnd) {
     const id = String(b.id);
-    return `<span class="note-empty">${moSuitPending.has(id) ? 'wird ermittelt …' : moSuitFailed.has(id) ? 'nicht ermittelbar' : '–'}</span>`;
+    return `<span class="note-empty">${moSuitPending.has(id) ? L('wird ermittelt …', 'determining …') : moSuitFailed.has(id) ? L('nicht ermittelbar', 'not determinable') : '–'}</span>`;
   }
-  return `<span class="k">Beim Start</span>${moSuitText(b.suitStart)}<span class="k" style="margin-top:6px">Beim Stoppen</span>${moSuitText(b.suitEnd)}`;
+  return `<span class="k">${L('Beim Start', 'At start')}</span>${moSuitText(b.suitStart)}<span class="k" style="margin-top:6px">${L('Beim Stoppen', 'At stop')}</span>${moSuitText(b.suitEnd)}`;
 }
 
 function moFmtDateTime(iso) {
-  return new Date(iso).toLocaleString('de-DE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+  return new Date(iso).toLocaleString(DATE_LOCALE, { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
 }
 
 // Gewinn grün, Verlust rot; % nur wenn das Investment bekannt ist. Ältere Einträge ohne Angabe: "–".
@@ -1990,7 +2200,7 @@ function moPnlCell(b) {
   const q = escapeHtml(moBotQuote(b));
   const cls = b.pnl > 0 ? 'pos' : b.pnl < 0 ? 'neg' : 'flat';
   const sign = b.pnl > 0 ? '+' : b.pnl < 0 ? '−' : '';
-  const pct = b.investment > 0 ? `<span class="pnl-sub">${sign}${moFmtPct(Math.abs(b.pnl) / b.investment * 100)} auf ${moFmtAmount(b.investment)} ${q}</span>` : '';
+  const pct = b.investment > 0 ? `<span class="pnl-sub">${sign}${moFmtPct(Math.abs(b.pnl) / b.investment * 100)} ${L('auf', 'on')} ${moFmtAmount(b.investment)} ${q}</span>` : '';
   return `<span class="pnl ${cls}">${sign}${moFmtAmount(b.pnl)} ${q}</span>${pct}`;
 }
 
@@ -2013,17 +2223,17 @@ function renderRemovedBots(fillSuitability = true) {
       <td>${eqAfterCell(b, afterById, eq.start)}</td>
       <td class="note-full">${moSuitCell(b)}</td>
       <td class="note-full">
-        <span class="k">Grund für Stopp</span>${escapeHtml(b.removeNote)}
-        ${b.note ? `<span class="k" style="margin-top:6px">Notiz</span>${escapeHtml(b.note)}` : ''}
+        <span class="k">${L('Grund für Stopp', 'Reason for stop')}</span>${escapeHtml(b.removeNote)}
+        ${b.note ? `<span class="k" style="margin-top:6px">${L('Notiz', 'Note')}</span>${escapeHtml(b.note)}` : ''}
       </td>
-      <td><button class="danger" data-rdel="${b.id}" type="button">Löschen</button></td>
+      <td><button class="danger" data-rdel="${b.id}" type="button">${L('Löschen', 'Delete')}</button></td>
     </tr>
   `).join('');
   $('mo-removedList').querySelectorAll('[data-rdel]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const id = btn.getAttribute('data-rdel');
       const b = loadRemovedBots().find((x) => String(x.id) === id);
-      if (!b || !confirm(`Eintrag ${b.symbol} (entfernt am ${moFmtDateTime(b.removedAt)}) endgültig löschen?`)) return;
+      if (!b || !confirm(L(`Eintrag ${b.symbol} (entfernt am ${moFmtDateTime(b.removedAt)}) endgültig löschen?`, `Permanently delete entry ${b.symbol} (removed on ${moFmtDateTime(b.removedAt)})?`))) return;
       saveRemovedBots(loadRemovedBots().filter((x) => String(x.id) !== id));
       renderRemovedBots(false);
     });
@@ -2074,7 +2284,7 @@ function eqCompute(removed = loadRemovedBots()) {
 }
 
 function eqAfterCell(b, afterById, start) {
-  if (!afterById.has(String(b.id))) return '<span class="note-empty">nicht gezählt</span>';
+  if (!afterById.has(String(b.id))) return `<span class="note-empty">${L('nicht gezählt', 'not counted')}</span>`;
   return start ? `${moFmtAmount(afterById.get(String(b.id)))} ${EQ_QUOTE}` : '<span class="note-empty">–</span>';
 }
 
@@ -2085,25 +2295,25 @@ function renderEquity(eq = eqCompute()) {
   const pctTxt = pct == null ? '' : ` (${pct > 0 ? '+' : pct < 0 ? '−' : ''}${moFmtPct(Math.abs(pct))})`;
 
   $('eq-summary').innerHTML = start
-    ? `<span class="${eqCls(pnl)}">${moFmtAmount(now)} ${EQ_QUOTE}${pctTxt}</span> <span class="status">· Startkapital ${moFmtAmount(start)} ${EQ_QUOTE}</span>`
-    : `<span class="${eqCls(pnl)}">${eqSigned(pnl)} ${EQ_QUOTE}</span> <span class="status">· Startkapital noch nicht festgelegt</span>`;
+    ? `<span class="${eqCls(pnl)}">${moFmtAmount(now)} ${EQ_QUOTE}${pctTxt}</span> <span class="status">· ${L('Startkapital', 'Starting capital')} ${moFmtAmount(start)} ${EQ_QUOTE}</span>`
+    : `<span class="${eqCls(pnl)}">${eqSigned(pnl)} ${EQ_QUOTE}</span> <span class="status">· ${L('Startkapital noch nicht festgelegt', 'Starting capital not set yet')}</span>`;
 
   if (document.activeElement !== $('eq-startInput')) $('eq-startInput').value = start ? moFmtAmount(start) : '';
   $('eq-now').textContent = start ? `${moFmtAmount(now)} ${EQ_QUOTE}` : '–';
-  $('eq-now-sub').textContent = start ? `Startkapital ${moFmtAmount(start)} ${EQ_QUOTE}` : 'Startkapital festlegen';
+  $('eq-now-sub').textContent = start ? `${L('Startkapital', 'Starting capital')} ${moFmtAmount(start)} ${EQ_QUOTE}` : L('Startkapital festlegen', 'Set starting capital');
   $('eq-pnl').textContent = `${eqSigned(pnl)} ${EQ_QUOTE}`;
   $('eq-pnl').className = 'kpi-value ' + eqCls(pnl);
-  $('eq-pnl-sub').textContent = pct == null ? 'Summe aller beendeten Bots' : `${pctTxt.trim().slice(1, -1)} auf das Startkapital`;
+  $('eq-pnl-sub').textContent = pct == null ? L('Summe aller beendeten Bots', 'Sum of all ended bots') : `${pctTxt.trim().slice(1, -1)} ${L('auf das Startkapital', 'on starting capital')}`;
   const wins = steps.filter((s) => s.pnl > 0).length, losses = steps.filter((s) => s.pnl < 0).length;
   $('eq-count').textContent = steps.length;
   $('eq-count-sub').textContent = steps.length
-    ? `${wins} mit Gewinn · ${losses} mit Verlust · Trefferquote ${Math.round(wins / steps.length * 100)} %`
-    : 'noch keine';
+    ? L(`${wins} mit Gewinn · ${losses} mit Verlust · Trefferquote ${Math.round(wins / steps.length * 100)} %`, `${wins} with profit · ${losses} with loss · hit rate ${Math.round(wins / steps.length * 100)} %`)
+    : L('noch keine', 'none yet');
 
   const skip = [];
-  if (eq.noPnl.length) skip.push(`ohne Angabe zu Gewinn/Verlust: ${eq.noPnl.map((b) => escapeHtml(b.symbol)).join(', ')}`);
-  if (eq.otherQuote.length) skip.push(`nicht in ${EQ_QUOTE}: ${eq.otherQuote.map((b) => escapeHtml(b.symbol)).join(', ')}`);
-  $('eq-skip').innerHTML = skip.length ? `Nicht berücksichtigt (${skip.join(' · ')})` : '';
+  if (eq.noPnl.length) skip.push(`${L('ohne Angabe zu Gewinn/Verlust', 'without profit/loss data')}: ${eq.noPnl.map((b) => escapeHtml(b.symbol)).join(', ')}`);
+  if (eq.otherQuote.length) skip.push(`${L('nicht in', 'not in')} ${EQ_QUOTE}: ${eq.otherQuote.map((b) => escapeHtml(b.symbol)).join(', ')}`);
+  $('eq-skip').innerHTML = skip.length ? `${L('Nicht berücksichtigt', 'Not included')} (${skip.join(' · ')})` : '';
   $('eq-skip').classList.toggle('hidden', !skip.length);
 
   eqDrawChart(eq);
@@ -2121,7 +2331,7 @@ function eqDrawChart({ start, steps }) {
   const tFirst = pts0.length ? pts0[0].t : tLast - 7 * EQ_DAY;
   const span = Math.max(tLast - tFirst, EQ_DAY);
   const t0 = tFirst - span * 0.03, t1 = pts0.length > 1 ? tLast : tFirst + span;
-  const pts = [{ label: start ? 'Startkapital' : 'Start', t: t0, value: base, pnl: null }, ...pts0];
+  const pts = [{ label: start ? L('Startkapital', 'Starting capital') : 'Start', t: t0, value: base, pnl: null }, ...pts0];
 
   let min = Math.min(...pts.map((p) => p.value)), max = Math.max(...pts.map((p) => p.value));
   const m = (max - min) * 0.15 || Math.abs(base) * 0.01 || 1;
@@ -2151,13 +2361,13 @@ function eqDrawChart({ start, steps }) {
   d.setHours(0, 0, 0, 0);
   if (dStep) {
     for (d.setDate(d.getDate() + 1); d.getTime() <= t1; d.setDate(d.getDate() + dStep)) {
-      ticks.push([d.getTime(), d.toLocaleDateString('de-CH', { day: '2-digit', month: '2-digit' })]);
+      ticks.push([d.getTime(), d.toLocaleDateString(DATE_LOCALE, { day: '2-digit', month: '2-digit' })]);
     }
   } else {
     const mStep = [1, 2, 3, 6, 12].find((k) => days / 30.4 / k <= 7) || 12;
     d.setDate(1);
     for (d.setMonth(d.getMonth() + 1); d.getTime() <= t1; d.setMonth(d.getMonth() + mStep)) {
-      ticks.push([d.getTime(), d.toLocaleDateString('de-CH', { month: 'short', year: '2-digit' })]);
+      ticks.push([d.getTime(), d.toLocaleDateString(DATE_LOCALE, { month: 'short', year: '2-digit' })]);
     }
   }
   ctx.textAlign = 'center';
@@ -2217,9 +2427,9 @@ function initEquity() {
   $('eq-chart').addEventListener('mouseleave', () => { $('eq-tip').style.display = 'none'; });
   $('eq-startBtn').addEventListener('click', () => {
     const v = parseNum($('eq-startInput').value);
-    if (!(v > 0)) { $('eq-startStatus').textContent = 'Bitte Betrag grösser als 0 eingeben.'; return; }
+    if (!(v > 0)) { $('eq-startStatus').textContent = L('Bitte Betrag grösser als 0 eingeben.', 'Please enter an amount greater than 0.'); return; }
     eqSaveStart(v);
-    $('eq-startStatus').textContent = 'Übernommen.';
+    $('eq-startStatus').textContent = L('Übernommen.', 'Applied.');
     $('eq-startInput').blur();
     renderEquity();
   });
@@ -2236,13 +2446,13 @@ function renderBotList() {
       <td>${fmt6(b.lower)} – ${fmt6(b.upper)}${moSlTpText(b)}</td>
       <td>${fmt6(b.startPrice)}</td>
       <td>${b.startDate}${b.startTime ? ' ' + b.startTime : ''}</td>
-      <td>${b.investment != null ? `${moFmtAmount(b.investment)} ${escapeHtml(moBotQuote(b))}` : '<span class="note-empty">fehlt</span>'}</td>
+      <td>${b.investment != null ? `${moFmtAmount(b.investment)} ${escapeHtml(moBotQuote(b))}` : `<span class="note-empty">${L('fehlt', 'missing')}</span>`}</td>
       <td>${moNotePreview(b.note)}</td>
       <td><div class="cell-actions">
-        <button class="secondary small" data-bt="${b.id}" type="button">Backtesten</button>
-        <button class="secondary small" data-edit="${b.id}" type="button">Anpassen</button>
-        <button class="secondary small" data-note="${b.id}" type="button">Notiz</button>
-        <button class="danger" data-del="${b.id}" type="button">Bot stoppen</button>
+        <button class="secondary small" data-bt="${b.id}" type="button">${L('Backtesten', 'Backtest')}</button>
+        <button class="secondary small" data-edit="${b.id}" type="button">${L('Anpassen', 'Edit')}</button>
+        <button class="secondary small" data-note="${b.id}" type="button">${L('Notiz', 'Note')}</button>
+        <button class="danger" data-del="${b.id}" type="button">${L('Bot stoppen', 'Stop bot')}</button>
       </div></td>
     </tr>
   `).join('');
@@ -2271,7 +2481,7 @@ async function moBacktestBot(id) {
   if (!b) return;
   const sym = symbolMap.get(b.symbol);
   if (!sym) {
-    alert(`${b.symbol} ist auf Binance nicht (mehr) handelbar – Backtest nicht möglich.`);
+    alert(L(`${b.symbol} ist auf Binance nicht (mehr) handelbar – Backtest nicht möglich.`, `${b.symbol} is not (or no longer) tradable on Binance – backtest not possible.`));
     return;
   }
   document.querySelector('.tab-btn[data-tab="backtest"]').click();
@@ -2336,10 +2546,10 @@ function moStartEdit(id) {
   $('mo-tp').value = b.takeProfit > 0 ? priceToInput(b.takeProfit, dec) : '';
   $('mo-startDate').value = b.startDate;
   $('mo-startTime').value = b.startTime || '';
-  $('mo-addTitle').textContent = `Bot anpassen · ${b.symbol}`;
-  $('mo-addBtn').textContent = 'Änderungen speichern';
+  $('mo-addTitle').textContent = L(`Bot anpassen · ${b.symbol}`, `Edit bot · ${b.symbol}`);
+  $('mo-addBtn').textContent = L('Änderungen speichern', 'Save changes');
   $('mo-cancelEditBtn').classList.remove('hidden');
-  $('mo-addStatus').textContent = 'Werte ändern und mit „Änderungen speichern“ übernehmen.';
+  $('mo-addStatus').textContent = L('Werte ändern und mit „Änderungen speichern“ übernehmen.', 'Change the values and apply them with “Save changes”.');
   $('mo-addBox').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
@@ -2347,8 +2557,8 @@ function moEndEdit() {
   if (moEditId == null) return;
   moEditId = null;
   moSetPairLocked(false);
-  $('mo-addTitle').textContent = 'Bot hinterlegen';
-  $('mo-addBtn').textContent = 'Bot hinzufügen';
+  $('mo-addTitle').textContent = L('Bot hinterlegen', 'Add bot');
+  $('mo-addBtn').textContent = L('Bot hinzufügen', 'Add bot');
   $('mo-cancelEditBtn').classList.add('hidden');
 }
 
@@ -2368,7 +2578,7 @@ function moSlTpText(b) {
 // Abstand in % der jeweiligen Grenze (wie moOutsidePct); unter 1% mit zwei Nachkommastellen,
 // damit "knapp an der Grenze" nicht zu 0 bzw. 100% gerundet wird.
 function moFmtPct(p) {
-  return p.toFixed(p < 1 ? 2 : 1).replace('.', ',') + '%';
+  return p.toFixed(p < 1 ? 2 : 1).replace('.', DEC) + '%';
 }
 
 // Kurs in der Tick-Genauigkeit des Paares (wie auf Binance), Fallback ohne Symbol-Info: 6 Stellen
@@ -2381,17 +2591,18 @@ function moCurrentPriceText(bot, data) {
   const quote = symbolMap.get(bot.symbol)?.quote || '';
   const chg = bot.startPrice > 0 ? (data.currentPrice - bot.startPrice) / bot.startPrice * 100 : null;
   const chgTxt = chg == null ? ''
-    : ` <span class="${chg >= 0 ? 'pos' : 'neg'}">(${chg >= 0 ? '+' : '−'}${Math.abs(chg).toFixed(1).replace('.', ',')}% seit Start)</span>`;
-  const at = new Date(data.priceTime).toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' });
-  return `${moFmtSymPrice(data.currentPrice, bot.symbol)} ${quote}${chgTxt} <span class="status">· Stand ${at}</span>`;
+    : ` <span class="${chg >= 0 ? 'pos' : 'neg'}">(${chg >= 0 ? '+' : '−'}${Math.abs(chg).toFixed(1).replace('.', DEC)}% ${L('seit Start', 'since start')})</span>`;
+  const at = new Date(data.priceTime).toLocaleTimeString(DATE_LOCALE, { hour: '2-digit', minute: '2-digit' });
+  return `${moFmtSymPrice(data.currentPrice, bot.symbol)} ${quote}${chgTxt} <span class="status">· ${L('Stand', 'as of')} ${at}</span>`;
 }
 
 function moPositionText(price, lower, upper) {
   if (price >= lower && price <= upper) {
-    return `Innerhalb der Range · ${moFmtPct((upper - price) / upper * 100)} unter der oberen Grenze · ${moFmtPct((price - lower) / lower * 100)} über der unteren Grenze`;
+    return L(`Innerhalb der Range · ${moFmtPct((upper - price) / upper * 100)} unter der oberen Grenze · ${moFmtPct((price - lower) / lower * 100)} über der unteren Grenze`,
+      `Inside the range · ${moFmtPct((upper - price) / upper * 100)} below the upper bound · ${moFmtPct((price - lower) / lower * 100)} above the lower bound`);
   }
-  if (price < lower) return `Ausserhalb der Range · ${moFmtPct((lower - price) / lower * 100)} unter der unteren Grenze`;
-  return `Ausserhalb der Range · ${moFmtPct((price - upper) / upper * 100)} über der oberen Grenze`;
+  if (price < lower) return L(`Ausserhalb der Range · ${moFmtPct((lower - price) / lower * 100)} unter der unteren Grenze`, `Outside the range · ${moFmtPct((lower - price) / lower * 100)} below the lower bound`);
+  return L(`Ausserhalb der Range · ${moFmtPct((price - upper) / upper * 100)} über der oberen Grenze`, `Outside the range · ${moFmtPct((price - upper) / upper * 100)} above the upper bound`);
 }
 
 // Balken: Range nimmt die mittleren 80% ein, links/rechts je 10% Platz für Kurse ausserhalb.
@@ -2404,7 +2615,7 @@ function moPositionBar(price, lower, upper, symbol) {
   const arrow = raw < 1 ? '◀ ' : raw > 99 ? ' ▶' : '';
   const labelAlign = x < 20 ? 'left' : x > 80 ? 'right' : 'center';
   return `
-    <div class="pos-bar" role="img" aria-label="Kurs ${fmt6(price)} in Range ${fmt6(lower)} bis ${fmt6(upper)}">
+    <div class="pos-bar" role="img" aria-label="${L('Kurs', 'Price')} ${fmt6(price)} ${L('in Range', 'in range')} ${fmt6(lower)} ${L('bis', 'to')} ${fmt6(upper)}">
       <div class="pos-price ${labelAlign}" style="left:${x}%">${raw < 1 ? arrow : ''}${f(price)}${raw > 99 ? arrow : ''}</div>
       <div class="pos-track">
         <div class="pos-range"></div>
@@ -2423,71 +2634,74 @@ function moOutsidePct(price, lower, upper) {
 // Die Regeln werden in dieser Reihenfolge geprüft; die erste zutreffende bestimmt die Empfehlung.
 // `rule` verweist auf den Eintrag in MO_RULES (für die Begründung "Warum?").
 function moDecideRecommendation(verdictNow, verdictAtStart, outsidePct) {
+  const STOP = L('Stoppen', 'Stop'), WATCH = L('Beobachten', 'Watch'), KEEP = L('Weiter laufen lassen', 'Keep running');
+  const why = (v) => (v.ev && v.ev.reasons.length ? ' (' + v.ev.reasons.map(scReasonText).join(', ') + ')' : '');
   if (outsidePct > 10) {
-    return { rule: 'farOutside', level: 'bad', text: 'Stoppen', reason: 'Der Kurs liegt mehr als 10% ausserhalb der Grid-Range – der Bot hält praktisch nur noch eine Position, statt zu traden.' };
+    return { rule: 'farOutside', level: 'bad', text: STOP, reason: L('Der Kurs liegt mehr als 10% ausserhalb der Grid-Range – der Bot hält praktisch nur noch eine Position, statt zu traden.', 'The price is more than 10% outside the grid range – the bot is practically just holding a position instead of trading.') };
   }
   if (outsidePct > 0) {
-    return { rule: 'nearOutside', level: 'warn', text: 'Beobachten', reason: 'Der Kurs hat die Grid-Range verlassen, ist aber noch nahe dran.' };
+    return { rule: 'nearOutside', level: 'warn', text: WATCH, reason: L('Der Kurs hat die Grid-Range verlassen, ist aber noch nahe dran.', 'The price has left the grid range but is still close to it.') };
   }
   const rank = { bad: 0, warn: 1, good: 2 };
   if (verdictNow.cls === 'bad') {
-    return { rule: 'nowBad', level: 'bad', text: 'Stoppen', reason: `Die aktuelle Eignungsprüfung stuft das Paar als ungeeignet für Grid-Trading ein${verdictNow.ev && verdictNow.ev.reasons.length ? ' (' + verdictNow.ev.reasons.join(', ') + ')' : ''}.` };
+    return { rule: 'nowBad', level: 'bad', text: STOP, reason: L(`Die aktuelle Eignungsprüfung stuft das Paar als ungeeignet für Grid-Trading ein${why(verdictNow)}.`, `The current suitability check rates the pair as unsuitable for grid trading${why(verdictNow)}.`) };
   }
   if (rank[verdictNow.cls] < rank[verdictAtStart.cls]) {
-    return { rule: 'worse', level: 'warn', text: 'Beobachten', reason: `Die Eignung hat sich seit dem Start verschlechtert (${verdictLabel(verdictAtStart.cls)} → ${verdictLabel(verdictNow.cls)}).` };
+    return { rule: 'worse', level: 'warn', text: WATCH, reason: L(`Die Eignung hat sich seit dem Start verschlechtert (${verdictLabel(verdictAtStart.cls)} → ${verdictLabel(verdictNow.cls)}).`, `Suitability has worsened since the start (${verdictLabel(verdictAtStart.cls)} → ${verdictLabel(verdictNow.cls)}).`) };
   }
   if (verdictNow.cls === 'warn') {
-    return { rule: 'nowWarn', level: 'warn', text: 'Beobachten', reason: `Die aktuelle Einschätzung ist nur bedingt positiv${verdictNow.ev && verdictNow.ev.reasons.length ? ' (' + verdictNow.ev.reasons.join(', ') + ')' : ''}.` };
+    return { rule: 'nowWarn', level: 'warn', text: WATCH, reason: L(`Die aktuelle Einschätzung ist nur bedingt positiv${why(verdictNow)}.`, `The current assessment is only partly positive${why(verdictNow)}.`) };
   }
-  const since = verdictAtStart.cls === 'good' ? 'seit dem Start unverändert gut' : `aktuell gut (verbessert seit dem Start: ${verdictLabel(verdictAtStart.cls)})`;
-  return { rule: 'ok', level: 'good', text: 'Weiter laufen lassen', reason: `Die Eignung ist ${since}, und der Kurs liegt innerhalb der Grid-Range.` };
+  const since = verdictAtStart.cls === 'good' ? L('seit dem Start unverändert gut', 'unchanged good since the start') : L(`aktuell gut (verbessert seit dem Start: ${verdictLabel(verdictAtStart.cls)})`, `currently good (improved since the start: ${verdictLabel(verdictAtStart.cls)})`);
+  return { rule: 'ok', level: 'good', text: KEEP, reason: L(`Die Eignung ist ${since}, und der Kurs liegt innerhalb der Grid-Range.`, `Suitability is ${since}, and the price is inside the grid range.`) };
 }
 
 const MO_RULES = [
-  { id: 'farOutside', result: 'Stoppen', level: 'bad', q: 'Liegt der Kurs mehr als 10% ausserhalb der Grid-Range?' },
-  { id: 'nearOutside', result: 'Beobachten', level: 'warn', q: 'Liegt der Kurs überhaupt ausserhalb der Grid-Range?' },
-  { id: 'nowBad', result: 'Stoppen', level: 'bad', q: 'Ist das Paar aktuell „Ungeeignet“?' },
-  { id: 'worse', result: 'Beobachten', level: 'warn', q: 'Ist die Eignung schlechter als beim Start?' },
-  { id: 'nowWarn', result: 'Beobachten', level: 'warn', q: 'Ist das Paar aktuell nur „Bedingt geeignet“?' },
-  { id: 'ok', result: 'Weiter laufen lassen', level: 'good', q: 'Keine der Warnregeln trifft zu' },
+  { id: 'farOutside', result: L('Stoppen', 'Stop'), level: 'bad', q: L('Liegt der Kurs mehr als 10% ausserhalb der Grid-Range?', 'Is the price more than 10% outside the grid range?') },
+  { id: 'nearOutside', result: L('Beobachten', 'Watch'), level: 'warn', q: L('Liegt der Kurs überhaupt ausserhalb der Grid-Range?', 'Is the price outside the grid range at all?') },
+  { id: 'nowBad', result: L('Stoppen', 'Stop'), level: 'bad', q: L('Ist das Paar aktuell „Ungeeignet“?', 'Is the pair currently “Unsuitable”?') },
+  { id: 'worse', result: L('Beobachten', 'Watch'), level: 'warn', q: L('Ist die Eignung schlechter als beim Start?', 'Is suitability worse than at the start?') },
+  { id: 'nowWarn', result: L('Beobachten', 'Watch'), level: 'warn', q: L('Ist das Paar aktuell nur „Bedingt geeignet“?', 'Is the pair currently only “Partly suitable”?') },
+  { id: 'ok', result: L('Weiter laufen lassen', 'Keep running'), level: 'good', q: L('Keine der Warnregeln trifft zu', 'None of the warning rules applies') },
 ];
 
 // ---------- Erklär-Modals "Warum?" (Coin Scanner + Bot-Monitoring): gemeinsame Bausteine ----------
 
-const wyNf = (v, dec) => v.toLocaleString('de-CH', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+const wyNf = (v, dec) => v.toLocaleString(NUM_LOCALE, { minimumFractionDigits: dec, maximumFractionDigits: dec });
 const wyPct = (v, dec = 1) => (v > 0 ? '+' : v < 0 ? '−' : '') + wyNf(Math.abs(v), dec) + ' %';
 const wyPlural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 const wyDeltaTxt = (x) => Math.abs(x) < 0.5 ? '±0' : (x > 0 ? '+' : '−') + wyNf(Math.abs(x), 0);
 const wyDeltaCls = (x) => Math.abs(x) < 0.5 ? 'wy-zero' : x > 0 ? 'wy-up' : 'wy-down';
-const wyDate = (t) => new Date(t).toLocaleDateString('de-CH', { day: '2-digit', month: '2-digit', year: '2-digit' });
-const WY_STATE = { good: ['✓', 'passt'], mid: ['~', 'teils'], bad: ['✕', 'passt nicht'], skip: ['–', 'nicht geprüft'] };
+const wyDate = (t) => new Date(t).toLocaleDateString(DATE_LOCALE, { day: '2-digit', month: '2-digit', year: '2-digit' });
+const WY_STATE = { good: ['✓', L('passt', 'fits')], mid: ['~', L('teils', 'partly')], bad: ['✕', L('passt nicht', 'does not fit')], skip: ['–', L('nicht geprüft', 'not checked')] };
 const wyState = (st, txt) => `<span class="wy-state s-${st}"><i>${WY_STATE[st][0]}</i>${txt ?? WY_STATE[st][1]}</span>`;
-const wyVolTxt = (v) => v >= 1e9 ? wyNf(v / 1e9, 2) + ' Mrd' : v >= 1e6 ? wyNf(v / 1e6, 1) + ' Mio' : wyNf(v / 1e3, 0) + ' Tsd';
+const wyVolTxt = (v) => v >= 1e9 ? wyNf(v / 1e9, 2) + L(' Mrd', ' bn') : v >= 1e6 ? wyNf(v / 1e6, 1) + L(' Mio', ' m') : wyNf(v / 1e3, 0) + L(' Tsd', ' k');
 
 // Die sechs Score-Kriterien mit Klartext-Frage, Messwert, Idealwert, Punkte-Regel und Fakt-Satz.
 // ev: Kennzahlen aus scEvaluate (adx, chop, er, atrPct, gridProfit, gridTrades, gc, volume, points)
 function wyCriteria(ev) {
   const p = ev.points;
-  const trades = ev.gridTrades != null ? `${ev.gridTrades} Trades mit ${ev.gc} Grids. ` : '';
+  const trades = ev.gridTrades != null ? L(`${ev.gridTrades} Trades mit ${ev.gc} Grids. `, `${ev.gridTrades} trades with ${ev.gc} grids. `) : '';
+  const D = L('T.', 'd');
   return [
-    { key: 'adx', name: 'Trendstärke', tech: 'ADX 14 T.', q: 'Läuft der Kurs klar in eine Richtung?', max: 25, value: wyNf(ev.adx, 1), ideal: '≤ 20',
-      fact: ev.adx <= 20 ? 'Kein nennenswerter Trend – der Kurs pendelt.' : ev.adx <= 25 ? 'Leichter Trend.' : ev.adx >= 40 ? 'Starker Trend: ab 40 gibt es 0 Punkte.' : 'Deutlicher Trend – das Grid wird einseitig gefüllt.',
-      rule: '≤ 20 volle Punkte · 25 → 15 P. · ab 40 → 0' },
-    { key: 'chop', name: 'Zickzack', tech: 'CHOP 14 T.', q: 'Pendelt der Kurs hin und her?', max: 15, value: wyNf(ev.chop, 1), ideal: '≥ 61.8',
-      fact: ev.chop >= 61.8 ? 'Stark hin und her – ideal für ein Grid.' : ev.chop > 38.2 ? 'Gemischt: teils Zickzack, teils gerichtet.' : 'Unter 38.2: gerichtete Bewegung, 0 Punkte.',
-      rule: '≤ 38.2 → 0 · ≥ 61.8 volle Punkte' },
-    { key: 'er', name: 'Umwege', tech: 'Efficiency Ratio 30 T.', q: 'Wie direkt kommt der Kurs ans Ziel?', max: 15, value: wyNf(ev.er, 2), ideal: '≤ 0.10',
-      fact: ev.er <= 0.1 ? 'Viele Umwege – viele Kauf/Verkauf-Gelegenheiten.' : ev.er < 0.4 ? 'Mittlerer Anteil an Umwegen.' : 'Sehr direkte Bewegung (Trend), ab 0.40 → 0 Punkte.',
-      rule: '≤ 0.10 volle Punkte · ≥ 0.40 → 0' },
-    { key: 'atr', name: 'Tägliche Schwankung', tech: 'ATR % 14 T.', q: 'Bewegt sich der Kurs genug pro Tag?', max: 15, value: wyNf(ev.atrPct, 1) + ' %', ideal: '2–8 %',
-      fact: ev.atrPct < 2 ? 'Zu wenig Bewegung – Grid-Stufen werden selten erreicht.' : ev.atrPct <= 8 ? 'Im idealen Bereich.' : 'Über 8 %: Risiko, dass der Kurs aus der Range fällt.',
-      rule: '< 1 % → 0 · 2–8 % volle Punkte · darüber sinkend (min. 5)' },
-    { key: 'sim', name: 'Grid-Test', tech: ev.gc ? `Simulation, ${ev.gc} Grids` : 'Simulation', q: 'Hätte ein Grid-Bot in 83 Tagen verdient?', max: 20, value: '+' + wyNf(ev.gridProfit, 1) + ' %', ideal: '≥ 15 %',
-      fact: `${trades}${ev.gridProfit >= 15 ? 'Sehr guter Grid-Gewinn.' : ev.gridProfit >= 3 ? 'Etwas Grid-Gewinn.' : 'Kaum Grid-Gewinn.'} (nur Grid-Gewinn, ohne Kursgewinn/-verlust)`,
-      rule: '0 % → 0 · ≥ 15 % volle Punkte' },
-    { key: 'vol', name: 'Handelsvolumen', tech: '24h in Quote', q: 'Werden Orders zuverlässig ausgeführt?', max: 10, value: wyVolTxt(ev.volume), ideal: '≥ 100 Mio',
-      fact: ev.volume >= 1e8 ? 'Sehr liquide.' : ev.volume >= 1e6 ? 'Ausreichend liquide, aber unter 100 Mio.' : 'Wenig Handel – Orders werden evtl. träge ausgeführt.',
-      rule: '≤ 1 Mio → 0 · ≥ 100 Mio volle Punkte (logarithmisch)' },
+    { key: 'adx', name: L('Trendstärke', 'Trend strength'), tech: `ADX 14 ${D}`, q: L('Läuft der Kurs klar in eine Richtung?', 'Is the price clearly moving in one direction?'), max: 25, value: wyNf(ev.adx, 1), ideal: '≤ 20',
+      fact: ev.adx <= 20 ? L('Kein nennenswerter Trend – der Kurs pendelt.', 'No notable trend – the price oscillates.') : ev.adx <= 25 ? L('Leichter Trend.', 'Slight trend.') : ev.adx >= 40 ? L('Starker Trend: ab 40 gibt es 0 Punkte.', 'Strong trend: from 40 there are 0 points.') : L('Deutlicher Trend – das Grid wird einseitig gefüllt.', 'Clear trend – the grid gets filled on one side.'),
+      rule: L('≤ 20 volle Punkte · 25 → 15 P. · ab 40 → 0', '≤ 20 full points · 25 → 15 pts · from 40 → 0') },
+    { key: 'chop', name: L('Zickzack', 'Zigzag'), tech: `CHOP 14 ${D}`, q: L('Pendelt der Kurs hin und her?', 'Does the price swing back and forth?'), max: 15, value: wyNf(ev.chop, 1), ideal: '≥ 61.8',
+      fact: ev.chop >= 61.8 ? L('Stark hin und her – ideal für ein Grid.', 'Strong back and forth – ideal for a grid.') : ev.chop > 38.2 ? L('Gemischt: teils Zickzack, teils gerichtet.', 'Mixed: partly zigzag, partly directional.') : L('Unter 38.2: gerichtete Bewegung, 0 Punkte.', 'Below 38.2: directional movement, 0 points.'),
+      rule: L('≤ 38.2 → 0 · ≥ 61.8 volle Punkte', '≤ 38.2 → 0 · ≥ 61.8 full points') },
+    { key: 'er', name: L('Umwege', 'Detours'), tech: `Efficiency Ratio 30 ${D}`, q: L('Wie direkt kommt der Kurs ans Ziel?', 'How directly does the price reach its target?'), max: 15, value: wyNf(ev.er, 2), ideal: '≤ 0.10',
+      fact: ev.er <= 0.1 ? L('Viele Umwege – viele Kauf/Verkauf-Gelegenheiten.', 'Many detours – many buy/sell opportunities.') : ev.er < 0.4 ? L('Mittlerer Anteil an Umwegen.', 'Medium share of detours.') : L('Sehr direkte Bewegung (Trend), ab 0.40 → 0 Punkte.', 'Very direct movement (trend), from 0.40 → 0 points.'),
+      rule: L('≤ 0.10 volle Punkte · ≥ 0.40 → 0', '≤ 0.10 full points · ≥ 0.40 → 0') },
+    { key: 'atr', name: L('Tägliche Schwankung', 'Daily fluctuation'), tech: `ATR % 14 ${D}`, q: L('Bewegt sich der Kurs genug pro Tag?', 'Does the price move enough per day?'), max: 15, value: wyNf(ev.atrPct, 1) + ' %', ideal: '2–8 %',
+      fact: ev.atrPct < 2 ? L('Zu wenig Bewegung – Grid-Stufen werden selten erreicht.', 'Too little movement – grid levels are rarely reached.') : ev.atrPct <= 8 ? L('Im idealen Bereich.', 'In the ideal range.') : L('Über 8 %: Risiko, dass der Kurs aus der Range fällt.', 'Above 8 %: risk that the price leaves the range.'),
+      rule: L('< 1 % → 0 · 2–8 % volle Punkte · darüber sinkend (min. 5)', '< 1 % → 0 · 2–8 % full points · decreasing above (min. 5)') },
+    { key: 'sim', name: L('Grid-Test', 'Grid test'), tech: ev.gc ? L(`Simulation, ${ev.gc} Grids`, `simulation, ${ev.gc} grids`) : L('Simulation', 'simulation'), q: L('Hätte ein Grid-Bot in 83 Tagen verdient?', 'Would a grid bot have earned money in 83 days?'), max: 20, value: '+' + wyNf(ev.gridProfit, 1) + ' %', ideal: '≥ 15 %',
+      fact: `${trades}${ev.gridProfit >= 15 ? L('Sehr guter Grid-Gewinn.', 'Very good grid profit.') : ev.gridProfit >= 3 ? L('Etwas Grid-Gewinn.', 'Some grid profit.') : L('Kaum Grid-Gewinn.', 'Hardly any grid profit.')} ${L('(nur Grid-Gewinn, ohne Kursgewinn/-verlust)', '(grid profit only, excluding price gain/loss)')}`,
+      rule: L('0 % → 0 · ≥ 15 % volle Punkte', '0 % → 0 · ≥ 15 % full points') },
+    { key: 'vol', name: L('Handelsvolumen', 'Trading volume'), tech: L('24h in Quote', '24h in quote'), q: L('Werden Orders zuverlässig ausgeführt?', 'Are orders filled reliably?'), max: 10, value: wyVolTxt(ev.volume), ideal: L('≥ 100 Mio', '≥ 100 m'),
+      fact: ev.volume >= 1e8 ? L('Sehr liquide.', 'Very liquid.') : ev.volume >= 1e6 ? L('Ausreichend liquide, aber unter 100 Mio.', 'Sufficiently liquid, but below 100 m.') : L('Wenig Handel – Orders werden evtl. träge ausgeführt.', 'Little trading – orders may be filled slowly.'),
+      rule: L('≤ 1 Mio → 0 · ≥ 100 Mio volle Punkte (logarithmisch)', '≤ 1 m → 0 · ≥ 100 m full points (logarithmic)') },
   ].map((c) => {
     const pts = p[c.key];
     const r = pts / c.max;
@@ -2506,8 +2720,8 @@ function wyRating(ev, score, cls, rangePct, driftRatio) {
 function wyScale(now, start = null) {
   const lbl = (v, txt) => `<span class="wy-mlabel" style="left:${Math.min(96, Math.max(4, v))}%">${txt}</span>`;
   const labels = start == null ? ''
-    : Math.abs(now - start) < 9 ? lbl((now + start) / 2, `Start ${start} → Jetzt <b>${now}</b>`)
-    : lbl(start, `Start ${start}`) + lbl(now, `<b>Jetzt ${now}</b>`);
+    : Math.abs(now - start) < 9 ? lbl((now + start) / 2, `Start ${start} → ${L('Jetzt', 'Now')} <b>${now}</b>`)
+    : lbl(start, `Start ${start}`) + lbl(now, `<b>${L('Jetzt', 'Now')} ${now}</b>`);
   return `<div class="wy-scale${start != null ? ' two' : ''}">
     ${labels}
     <div class="wy-scale-track">
@@ -2516,42 +2730,43 @@ function wyScale(now, start = null) {
       <div class="wy-marker" style="left:${now}%"></div>
     </div>
     <div class="wy-ticks"><span style="left:0;transform:none">0</span><span style="left:45%">45</span><span style="left:65%">65</span><span style="left:100%;transform:translateX(-100%)">100</span></div>
-    <div class="wy-zlabels"><span style="flex:45">Ungeeignet</span><span style="flex:20">Bedingt</span><span style="flex:35">Gut geeignet</span></div>
+    <div class="wy-zlabels"><span style="flex:45">${L('Ungeeignet', 'Unsuitable')}</span><span style="flex:20">${L('Bedingt', 'Partly')}</span><span style="flex:35">${L('Gut geeignet', 'Well suited')}</span></div>
   </div>`;
 }
 
 // Abstand zu den Stufengrenzen in Worten
 function wyDistance(r) {
-  const next = r.cls === 'bad' ? { at: 45, lbl: 'Bedingt geeignet' } : r.cls === 'warn' && !r.downgraded ? { at: 65, lbl: 'Gut geeignet' } : null;
-  const lower = r.cls === 'good' ? { at: 65, lbl: 'Bedingt geeignet' } : r.cls === 'warn' && !r.downgraded ? { at: 45, lbl: 'Ungeeignet' } : null;
+  const next = r.cls === 'bad' ? { at: 45, lbl: verdictLabel('warn') } : r.cls === 'warn' && !r.downgraded ? { at: 65, lbl: verdictLabel('good') } : null;
+  const lower = r.cls === 'good' ? { at: 65, lbl: verdictLabel('warn') } : r.cls === 'warn' && !r.downgraded ? { at: 45, lbl: verdictLabel('bad') } : null;
   const miss = next && next.at - r.score;
   const buf = lower && r.score - lower.at + 1;
   return [
-    next ? `Bis „${next.lbl}“ (ab ${next.at}) fehl${miss === 1 ? 't' : 'en'} <b>${wyPlural(miss, 'Punkt', 'Punkte')}</b>.` : '',
-    lower ? `Mit <b>${wyPlural(buf, 'Punkt', 'Punkten')} weniger</b> wäre es „${lower.lbl}“.` : '',
-    r.downgraded ? 'Die Punkte reichen für „Gut“, aber die 83-Tage-Prüfung senkt auf „Bedingt“.' : '',
+    next ? L(`Bis „${next.lbl}“ (ab ${next.at}) fehl${miss === 1 ? 't' : 'en'} <b>${wyPlural(miss, 'Punkt', 'Punkte')}</b>.`,
+      `<b>${wyPlural(miss, 'point', 'points')}</b> missing for “${next.lbl}” (from ${next.at}).`) : '',
+    lower ? L(`Mit <b>${wyPlural(buf, 'Punkt', 'Punkten')} weniger</b> wäre es „${lower.lbl}“.`, `With <b>${wyPlural(buf, 'point', 'points')} less</b> it would be “${lower.lbl}”.`) : '',
+    r.downgraded ? L('Die Punkte reichen für „Gut“, aber die 83-Tage-Prüfung senkt auf „Bedingt“.', 'The points are enough for “Well suited”, but the 83-day check lowers it to “Partly suitable”.') : '',
   ].filter(Boolean).join(' ');
 }
 
 // Punkte-Leiste: ein Block je Kriterium, Breite = Gewicht; mit `rStart` eine zweite (dünne) Zeile für den Start
 function wyPointsBar(r, rStart = null) {
-  const bar = (x, slim) => `<div class="wy-pbar${slim ? ' slim' : ''}">${x.crit.map((c) => `<div class="wy-pseg s-${c.st}" style="flex:${c.max}" title="${c.name}: ${wyNf(c.pts, 1)} von ${c.max} Punkten"><span style="width:${c.pts / c.max * 100}%"></span></div>`).join('')}</div>`;
+  const bar = (x, slim) => `<div class="wy-pbar${slim ? ' slim' : ''}">${x.crit.map((c) => `<div class="wy-pseg s-${c.st}" style="flex:${c.max}" title="${c.name}: ${wyNf(c.pts, 1)} ${L('von', 'of')} ${c.max} ${L('Punkten', 'points')}"><span style="width:${c.pts / c.max * 100}%"></span></div>`).join('')}</div>`;
   const legend = r.crit.map((c, i) => {
     const d = rStart ? c.pts - rStart.crit[i].pts : 0;
     return `<span style="flex:${c.max}" title="${c.name}">${c.name}<br><b>${wyNf(c.pts, 0)}/${c.max}</b>${rStart ? ` <span class="${wyDeltaCls(d)}">${wyDeltaTxt(d)}</span>` : ''}</span>`;
   }).join('');
   return `${rStart
-    ? `<div class="wy-prow"><span class="wy-plab">Start</span>${bar(rStart, true)}</div><div class="wy-prow"><span class="wy-plab">Jetzt</span>${bar(r)}</div>`
+    ? `<div class="wy-prow"><span class="wy-plab">Start</span>${bar(rStart, true)}</div><div class="wy-prow"><span class="wy-plab">${L('Jetzt', 'Now')}</span>${bar(r)}</div>`
     : bar(r)}
     <div class="wy-plegend${rStart ? ' indent' : ''}">${legend}</div>
-    <p class="wy-hint">Jeder Block ist so breit wie sein Gewicht (max. Punkte). Gefüllt = erreicht, leer = verloren.</p>`;
+    <p class="wy-hint">${L('Jeder Block ist so breit wie sein Gewicht (max. Punkte). Gefüllt = erreicht, leer = verloren.', 'Each block is as wide as its weight (max. points). Filled = achieved, empty = lost.')}</p>`;
 }
 
 // Kriterien-Tabelle; mit `rStart` zusätzlich die Messwerte beim Start und die Veränderung der Punkte
 function wyCritTable(r, rStart = null) {
   const rows = r.crit.map((c, i) => {
     const s = rStart && rStart.crit[i];
-    const change = s ? `<span class="wy-lost ${wyDeltaCls(c.pts - s.pts)}">${wyDeltaTxt(c.pts - s.pts)} seit Start</span>`
+    const change = s ? `<span class="wy-lost ${wyDeltaCls(c.pts - s.pts)}">${wyDeltaTxt(c.pts - s.pts)} ${L('seit Start', 'since start')}</span>`
       : c.lost >= 0.05 ? `<span class="wy-lost">−${wyNf(c.lost, 1)}</span>` : '';
     return `<tr>
       <td><div class="wy-cname">${c.name} <span class="wy-cq">· ${c.tech}</span></div><div class="wy-cq">${c.q}</div><div class="wy-cfact">${c.fact}</div></td>
@@ -2563,32 +2778,33 @@ function wyCritTable(r, rStart = null) {
     </tr>`;
   }).join('');
   return `<table class="wy-crit">
-    <thead><tr><th>Kriterium</th>${rStart ? '<th class="wy-num">Start</th><th class="wy-num">Jetzt</th>' : '<th class="wy-num">Messwert</th>'}<th class="wy-num">Ideal</th><th class="wy-num">Punkte</th><th></th></tr></thead>
+    <thead><tr><th>${L('Kriterium', 'Criterion')}</th>${rStart ? `<th class="wy-num">Start</th><th class="wy-num">${L('Jetzt', 'Now')}</th>` : `<th class="wy-num">${L('Messwert', 'Value')}</th>`}<th class="wy-num">Ideal</th><th class="wy-num">${L('Punkte', 'Points')}</th><th></th></tr></thead>
     <tbody>${rows}</tbody>
   </table>`;
 }
 
 // 83-Tage-Sicherheitsprüfung (zweite Stufe nach dem Score)
 function wyGate(r) {
+  const title = L('83-Tage-Sicherheitsprüfung', '83-day safety check');
   if (r.gateFail == null) {
-    return `<div class="wy-gate"><b>83-Tage-Sicherheitsprüfung</b><div class="wy-gate-res">Für diese ältere Bewertung nicht gespeichert – „Scan starten“ bewertet neu.${r.downgraded ? ' Sie hat „Gut geeignet“ auf „Bedingt geeignet“ gesenkt.' : ''}</div></div>`;
+    return `<div class="wy-gate"><b>${title}</b><div class="wy-gate-res">${L('Für diese ältere Bewertung nicht gespeichert – „Scan starten“ bewertet neu.', 'Not stored for this older rating – “Start scan” re-evaluates.')}${r.downgraded ? L(' Sie hat „Gut geeignet“ auf „Bedingt geeignet“ gesenkt.', ' It lowered “Well suited” to “Partly suitable”.') : ''}</div></div>`;
   }
-  const res = !r.gateFail ? 'Bestanden – keine Auswirkung auf die Einstufung.'
-    : r.downgraded ? '<b class="wy-warn-txt">Nicht bestanden – „Gut geeignet“ wurde auf „Bedingt geeignet“ gesenkt.</b>'
-    : 'Nicht bestanden – ohne Auswirkung, weil der Score schon unter 65 liegt.';
+  const res = !r.gateFail ? L('Bestanden – keine Auswirkung auf die Einstufung.', 'Passed – no effect on the rating.')
+    : r.downgraded ? `<b class="wy-warn-txt">${L('Nicht bestanden – „Gut geeignet“ wurde auf „Bedingt geeignet“ gesenkt.', 'Failed – “Well suited” was lowered to “Partly suitable”.')}</b>`
+    : L('Nicht bestanden – ohne Auswirkung, weil der Score schon unter 65 liegt.', 'Failed – no effect because the score is already below 65.');
   return `<div class="wy-gate">
-    <b>83-Tage-Sicherheitsprüfung</b>
-    <div class="wy-gate-row"><span>Hat sich der Kurs genug bewegt? Spanne ${wyNf(r.rangePct, 1)} % (mind. 4 %)</span>${wyState(r.rangePct >= 4 ? 'good' : 'bad')}</div>
-    <div class="wy-gate-row"><span>Seitwärts statt Einbahnstrasse? Trend-Anteil ${wyNf(r.driftRatio * 100, 0)} % (max. 65 %)</span>${wyState(r.driftRatio <= 0.65 ? 'good' : 'bad')}</div>
+    <b>${title}</b>
+    <div class="wy-gate-row"><span>${L(`Hat sich der Kurs genug bewegt? Spanne ${wyNf(r.rangePct, 1)} % (mind. 4 %)`, `Has the price moved enough? Range ${wyNf(r.rangePct, 1)} % (min. 4 %)`)}</span>${wyState(r.rangePct >= 4 ? 'good' : 'bad')}</div>
+    <div class="wy-gate-row"><span>${L(`Seitwärts statt Einbahnstrasse? Trend-Anteil ${wyNf(r.driftRatio * 100, 0)} % (max. 65 %)`, `Sideways rather than one-way? Trend share ${wyNf(r.driftRatio * 100, 0)} % (max. 65 %)`)}</span>${wyState(r.driftRatio <= 0.65 ? 'good' : 'bad')}</div>
     <div class="wy-gate-res">${res}</div>
   </div>`;
 }
 
 // Aufklappbare Rechenregeln; `extra` = zusätzliche Tabellenzeilen
 function wyHow(r, extra = '') {
-  return `<details class="wy-how"><summary>Wie wird gerechnet?</summary>
-    <table>${r.crit.map((c) => `<tr><td>${c.name} (${c.max} P.)</td><td>${c.rule}</td></tr>`).join('')}
-    <tr><td>Einstufung</td><td>ab 65 Gut geeignet · 45–64 Bedingt · unter 45 Ungeeignet. Schlägt die 83-Tage-Prüfung an (Spanne unter 4 % oder Trend-Anteil über 65 %), höchstens „Bedingt“. Basis: letzte 500 4h-Kerzen (~83 Tage).</td></tr>${extra}</table>
+  return `<details class="wy-how"><summary>${L('Wie wird gerechnet?', 'How is it calculated?')}</summary>
+    <table>${r.crit.map((c) => `<tr><td>${c.name} (${c.max} ${L('P.', 'pts')})</td><td>${c.rule}</td></tr>`).join('')}
+    <tr><td>${L('Einstufung', 'Rating')}</td><td>${L('ab 65 Gut geeignet · 45–64 Bedingt · unter 45 Ungeeignet. Schlägt die 83-Tage-Prüfung an (Spanne unter 4 % oder Trend-Anteil über 65 %), höchstens „Bedingt“. Basis: letzte 500 4h-Kerzen (~83 Tage).', 'from 65 well suited · 45–64 partly · below 45 unsuitable. If the 83-day check fails (range below 4 % or trend share above 65 %), at most “Partly”. Basis: last 500 4h candles (~83 days).')}</td></tr>${extra}</table>
   </details>`;
 }
 
@@ -2636,7 +2852,7 @@ function wyLineChart(el, { series, t0, dt, fmt, hlines = [], band = null, trend 
     xd.setAttribute('cx', x(i)); xd.setAttribute('cy', y(series[i])); xd.setAttribute('visibility', 'visible');
     const t = new Date(t0 + i * dt);
     tip.style.display = 'block';
-    tip.innerHTML = `${wyDate(t)}${dt < 864e5 ? ' ' + t.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' }) : ''} · <b>${fmt(series[i])}</b>`;
+    tip.innerHTML = `${wyDate(t)}${dt < 864e5 ? ' ' + t.toLocaleTimeString(DATE_LOCALE, { hour: '2-digit', minute: '2-digit' }) : ''} · <b>${fmt(series[i])}</b>`;
     tip.style.left = Math.max(0, Math.min(x(i) / W * rc.width + 10, rc.width - tip.offsetWidth - 4)) + 'px';
     tip.style.top = (y(series[i]) / H * rc.height - 30) + 'px';
   });
@@ -2678,24 +2894,34 @@ function moRenderExplanation(bot, data) {
   // Wie lange liegt der Kurs schon ausserhalb? (4h-Kerzen vom Ende rückwärts)
   let outBars = 0;
   for (let k = closes.length - 1; k >= 0 && (closes[k] < bot.lower || closes[k] > bot.upper); k--) outBars++;
-  const outTxt = !outBars ? '' : outBars * 4 >= 48 ? `seit ca. ${Math.round(outBars * 4 / 24)} Tagen` : `seit ca. ${outBars * 4} Stunden`;
+  const outTxt = !outBars ? '' : outBars * 4 >= 48
+    ? L(`seit ca. ${Math.round(outBars * 4 / 24)} Tagen`, `for approx. ${Math.round(outBars * 4 / 24)} days`)
+    : L(`seit ca. ${outBars * 4} Stunden`, `for approx. ${outBars * 4} hours`);
   const posTxt = inside
-    ? `innerhalb der Range (${wyNf((bot.upper - price) / price * 100, 1)} % bis zur Ober-, ${wyNf((price - bot.lower) / price * 100, 1)} % bis zur Untergrenze)`
-    : `${wyNf(out, 1)} % ${below ? 'unter der Untergrenze' : 'über der Obergrenze'} ${f(below ? bot.lower : bot.upper)}`;
-  const lbl = (v) => `„${verdictLabel(v.cls)}“${v.score != null ? ` (${v.score})` : ''}`;
+    ? L(`innerhalb der Range (${wyNf((bot.upper - price) / price * 100, 1)} % bis zur Ober-, ${wyNf((price - bot.lower) / price * 100, 1)} % bis zur Untergrenze)`,
+      `inside the range (${wyNf((bot.upper - price) / price * 100, 1)} % to the upper, ${wyNf((price - bot.lower) / price * 100, 1)} % to the lower bound)`)
+    : `${wyNf(out, 1)} % ${below ? L('unter der Untergrenze', 'below the lower bound') : L('über der Obergrenze', 'above the upper bound')} ${f(below ? bot.lower : bot.upper)}`;
+  const q = (s) => L(`„${s}“`, `“${s}”`);
+  const lbl = (v) => `${q(verdictLabel(v.cls))}${v.score != null ? ` (${v.score})` : ''}`;
+  const STOP = q(L('Stoppen', 'Stop')), WATCH = q(L('Beobachten', 'Watch'));
+  const outside = (d) => (d < 0 ? L('unter', 'below') : L('über', 'above'));
+  const dirB = below ? -1 : 1;
 
   // Entscheidungsweg: Fakt je Regel
   const facts = {
-    farOutside: inside ? 'Nein, Kurs innerhalb der Range.' : `${wyNf(out, 1)} % ausserhalb, Grenze für „Stoppen“: 10 %.`,
-    nearOutside: inside ? `Nein, Kurs ${f(price)} liegt in ${f(bot.lower)}–${f(bot.upper)}.` : `Ja, ${wyNf(out, 1)} % ${below ? 'unter' : 'über'} der Range${outTxt ? ', ' + outTxt : ''}.`,
-    nowBad: verdictNow.score != null ? `Score jetzt ${verdictNow.score} (Ungeeignet unter 45).` : `Jetzt: ${verdictLabel(verdictNow.cls)} (einfache Prüfung).`,
-    worse: `Start: ${lbl(verdictAtStart)} → jetzt: ${lbl(verdictNow)}.`,
-    nowWarn: verdictNow.score != null ? `Score jetzt ${verdictNow.score} (Gut ab 65${now?.downgraded ? ', aber 83-Tage-Prüfung nicht bestanden' : ''}).` : `Jetzt: ${verdictLabel(verdictNow.cls)}.`,
-    ok: 'Kurs in der Range und Eignung „Gut“.',
+    farOutside: inside ? L('Nein, Kurs innerhalb der Range.', 'No, price inside the range.') : L(`${wyNf(out, 1)} % ausserhalb, Grenze für ${STOP}: 10 %.`, `${wyNf(out, 1)} % outside, threshold for ${STOP}: 10 %.`),
+    nearOutside: inside ? L(`Nein, Kurs ${f(price)} liegt in ${f(bot.lower)}–${f(bot.upper)}.`, `No, price ${f(price)} is within ${f(bot.lower)}–${f(bot.upper)}.`)
+      : L(`Ja, ${wyNf(out, 1)} % ${outside(dirB)} der Range${outTxt ? ', ' + outTxt : ''}.`, `Yes, ${wyNf(out, 1)} % ${outside(dirB)} the range${outTxt ? ', ' + outTxt : ''}.`),
+    nowBad: verdictNow.score != null ? L(`Score jetzt ${verdictNow.score} (Ungeeignet unter 45).`, `Score now ${verdictNow.score} (unsuitable below 45).`) : L(`Jetzt: ${verdictLabel(verdictNow.cls)} (einfache Prüfung).`, `Now: ${verdictLabel(verdictNow.cls)} (simple check).`),
+    worse: L(`Start: ${lbl(verdictAtStart)} → jetzt: ${lbl(verdictNow)}.`, `Start: ${lbl(verdictAtStart)} → now: ${lbl(verdictNow)}.`),
+    nowWarn: verdictNow.score != null
+      ? L(`Score jetzt ${verdictNow.score} (Gut ab 65${now?.downgraded ? ', aber 83-Tage-Prüfung nicht bestanden' : ''}).`, `Score now ${verdictNow.score} (good from 65${now?.downgraded ? ', but 83-day check failed' : ''}).`)
+      : L(`Jetzt: ${verdictLabel(verdictNow.cls)}.`, `Now: ${verdictLabel(verdictNow.cls)}.`),
+    ok: L('Kurs in der Range und Eignung „Gut“.', 'Price in the range and suitability “Good”.'),
   };
   const chain = MO_RULES.map((r, k) => {
     const state = k < hitIdx ? 'pass' : k === hitIdx ? 'hit' : 'skip';
-    const res = state === 'pass' ? wyState('good', 'Nein') : state === 'hit' ? `<span class="badge ${r.level}">${r.result}</span>` : wyState('skip');
+    const res = state === 'pass' ? wyState('good', L('Nein', 'No')) : state === 'hit' ? `<span class="badge ${r.level}">${r.result}</span>` : wyState('skip');
     return `<li class="${state} ${r.level}"><span class="wy-n">${k + 1}.</span><div>${r.q}${state !== 'skip' ? `<div class="wy-f">${facts[r.id]}</div>` : ''}</div><div>${res}</div></li>`;
   }).join('');
 
@@ -2703,80 +2929,85 @@ function moRenderExplanation(bot, data) {
   const worst = now && start
     ? now.crit.map((c, k) => ({ c, s: start.crit[k], d: c.pts - start.crit[k].pts })).filter((m) => m.d <= -2).sort((a, b) => a.d - b.d).slice(0, 2)
     : [];
-  const worstTxt = worst.length ? ` Grösste Verluste: ${worst.map((m) => `${m.c.name} ${wyDeltaTxt(m.d)} (${m.s.value} → ${m.c.value})`).join(', ')}.` : '';
+  const worstTxt = worst.length ? ` ${L('Grösste Verluste', 'Biggest losses')}: ${worst.map((m) => `${m.c.name} ${wyDeltaTxt(m.d)} (${m.s.value} → ${m.c.value})`).join(', ')}.` : '';
 
   const lead = {
-    farOutside: `Der Kurs liegt ${posTxt}${outTxt ? ', ' + outTxt : ''} – mehr als die 10 %, ab denen „Stoppen“ gilt. ${above ? `Der Bot hat alle Coins verkauft, hält nur noch ${quote || 'Quote-Asset'}` : 'Der Bot hat alles in Coins angelegt'} und handelt nicht mehr.`,
-    nearOutside: `Der Kurs liegt ${posTxt}${outTxt ? ', ' + outTxt : ''}. Der Bot handelt erst wieder, wenn der Kurs in die Range zurückkommt. „Stoppen“ ab 10 % (Kurs ${below ? 'unter ' + f(stopLo) : 'über ' + f(stopHi)}).`,
-    nowBad: `Der Kurs liegt ${posTxt}, aber die Eignung ist jetzt ${lbl(verdictNow)}.${worstTxt}`,
-    worse: `Der Kurs liegt ${posTxt}. Die Eignung ist aber von ${lbl(verdictAtStart)} auf ${lbl(verdictNow)} gefallen.${worstTxt}`,
-    nowWarn: `Der Kurs liegt ${posTxt}. Die Eignung ist nur „Bedingt“${verdictNow.score != null ? ` (Score ${verdictNow.score}, Gut ab 65)` : ''}${verdictAtStart.cls === 'warn' ? ', wie schon beim Start' : ''}.`,
-    ok: `Der Kurs liegt ${posTxt}, die Eignung ist „Gut“${verdictNow.score != null ? ` (Score ${verdictNow.score}${verdictAtStart.score != null && verdictAtStart.score !== verdictNow.score ? `, beim Start ${verdictAtStart.score}` : ''})` : ''}. Keine Warnregel trifft zu.`,
+    farOutside: L(`Der Kurs liegt ${posTxt}${outTxt ? ', ' + outTxt : ''} – mehr als die 10 %, ab denen ${STOP} gilt. ${above ? `Der Bot hat alle Coins verkauft, hält nur noch ${quote || 'Quote-Asset'}` : 'Der Bot hat alles in Coins angelegt'} und handelt nicht mehr.`,
+      `The price is ${posTxt}${outTxt ? ', ' + outTxt : ''} – more than the 10 % from which ${STOP} applies. ${above ? `The bot has sold all coins and only holds ${quote || 'the quote asset'}` : 'The bot has put everything into coins'} and no longer trades.`),
+    nearOutside: L(`Der Kurs liegt ${posTxt}${outTxt ? ', ' + outTxt : ''}. Der Bot handelt erst wieder, wenn der Kurs in die Range zurückkommt. ${STOP} ab 10 % (Kurs ${below ? 'unter ' + f(stopLo) : 'über ' + f(stopHi)}).`,
+      `The price is ${posTxt}${outTxt ? ', ' + outTxt : ''}. The bot only trades again once the price returns to the range. ${STOP} from 10 % (price ${below ? 'below ' + f(stopLo) : 'above ' + f(stopHi)}).`),
+    nowBad: L(`Der Kurs liegt ${posTxt}, aber die Eignung ist jetzt ${lbl(verdictNow)}.${worstTxt}`, `The price is ${posTxt}, but suitability is now ${lbl(verdictNow)}.${worstTxt}`),
+    worse: L(`Der Kurs liegt ${posTxt}. Die Eignung ist aber von ${lbl(verdictAtStart)} auf ${lbl(verdictNow)} gefallen.${worstTxt}`, `The price is ${posTxt}. However, suitability has dropped from ${lbl(verdictAtStart)} to ${lbl(verdictNow)}.${worstTxt}`),
+    nowWarn: L(`Der Kurs liegt ${posTxt}. Die Eignung ist nur „Bedingt“${verdictNow.score != null ? ` (Score ${verdictNow.score}, Gut ab 65)` : ''}${verdictAtStart.cls === 'warn' ? ', wie schon beim Start' : ''}.`,
+      `The price is ${posTxt}. Suitability is only “Partly”${verdictNow.score != null ? ` (score ${verdictNow.score}, good from 65)` : ''}${verdictAtStart.cls === 'warn' ? ', as it was at the start' : ''}.`),
+    ok: L(`Der Kurs liegt ${posTxt}, die Eignung ist „Gut“${verdictNow.score != null ? ` (Score ${verdictNow.score}${verdictAtStart.score != null && verdictAtStart.score !== verdictNow.score ? `, beim Start ${verdictAtStart.score}` : ''})` : ''}. Keine Warnregel trifft zu.`,
+      `The price is ${posTxt}, suitability is “Good”${verdictNow.score != null ? ` (score ${verdictNow.score}${verdictAtStart.score != null && verdictAtStart.score !== verdictNow.score ? `, at start ${verdictAtStart.score}` : ''})` : ''}. No warning rule applies.`),
   }[rec.rule];
 
   // Nächste Schwellen in Kurs und Punkten, relativ zu jetzt
   const to = (v) => wyPct((v - price) / price * 100);
+  const P = L('P.', 'pts');
   const lv = [];
   if (inside) {
-    lv.push([`„Beobachten“, wenn der Kurs die Range verlässt: unter ${f(bot.lower)} oder über ${f(bot.upper)}`, `${to(bot.lower)} / ${to(bot.upper)}`]);
-    lv.push([`„Stoppen“, wenn der Kurs mehr als 10 % ausserhalb liegt: unter ${f(stopLo)} oder über ${f(stopHi)}`, `${to(stopLo)} / ${to(stopHi)}`]);
+    lv.push([L(`${WATCH}, wenn der Kurs die Range verlässt: unter ${f(bot.lower)} oder über ${f(bot.upper)}`, `${WATCH} if the price leaves the range: below ${f(bot.lower)} or above ${f(bot.upper)}`), `${to(bot.lower)} / ${to(bot.upper)}`]);
+    lv.push([L(`${STOP}, wenn der Kurs mehr als 10 % ausserhalb liegt: unter ${f(stopLo)} oder über ${f(stopHi)}`, `${STOP} if the price is more than 10 % outside: below ${f(stopLo)} or above ${f(stopHi)}`), `${to(stopLo)} / ${to(stopHi)}`]);
   } else if (out <= 10) {
-    lv.push([`Zurück in der Range ab ${f(below ? bot.lower : bot.upper)}`, to(below ? bot.lower : bot.upper)]);
-    lv.push([`„Stoppen“ ${below ? 'unter' : 'über'} ${f(below ? stopLo : stopHi)} (10 % ausserhalb)`, to(below ? stopLo : stopHi)]);
+    lv.push([L(`Zurück in der Range ab ${f(below ? bot.lower : bot.upper)}`, `Back in the range from ${f(below ? bot.lower : bot.upper)}`), to(below ? bot.lower : bot.upper)]);
+    lv.push([L(`${STOP} ${outside(dirB)} ${f(below ? stopLo : stopHi)} (10 % ausserhalb)`, `${STOP} ${outside(dirB)} ${f(below ? stopLo : stopHi)} (10 % outside)`), to(below ? stopLo : stopHi)]);
   } else {
-    lv.push([`Nur noch „Beobachten“, sobald der Kurs ${below ? 'über' : 'unter'} ${f(below ? stopLo : stopHi)} liegt (weniger als 10 % ausserhalb)`, to(below ? stopLo : stopHi)]);
-    lv.push([`Zurück in der Range: ${below ? 'über' : 'unter'} ${f(below ? bot.lower : bot.upper)}`, to(below ? bot.lower : bot.upper)]);
+    lv.push([L(`Nur noch ${WATCH}, sobald der Kurs ${outside(-dirB)} ${f(below ? stopLo : stopHi)} liegt (weniger als 10 % ausserhalb)`, `Only ${WATCH} once the price is ${outside(-dirB)} ${f(below ? stopLo : stopHi)} (less than 10 % outside)`), to(below ? stopLo : stopHi)]);
+    lv.push([L(`Zurück in der Range: ${outside(-dirB)} ${f(below ? bot.lower : bot.upper)}`, `Back in the range: ${outside(-dirB)} ${f(below ? bot.lower : bot.upper)}`), to(below ? bot.lower : bot.upper)]);
   }
   if (now) {
-    if (now.cls === 'bad') lv.push(['Nicht mehr „Ungeeignet“ ab Score 45', `+${45 - now.score} P.`]);
-    else lv.push(['„Stoppen“, wenn der Score unter 45 fällt', `−${now.score - 44} P.`]);
-    if (now.cls !== 'good') lv.push([`Für „Weiter laufen lassen“ braucht es „Gut geeignet“ (Score ab 65${now.gateFail ? ' und bestandene 83-Tage-Prüfung' : ''})`, now.score >= 65 ? '83-Tage-Prüfung' : `+${65 - now.score} P.`]);
-    else lv.push(['„Beobachten“, wenn der Score unter 65 fällt', `−${now.score - 64} P.`]);
+    if (now.cls === 'bad') lv.push([L('Nicht mehr „Ungeeignet“ ab Score 45', 'No longer “Unsuitable” from score 45'), `+${45 - now.score} ${P}`]);
+    else lv.push([L(`${STOP}, wenn der Score unter 45 fällt`, `${STOP} if the score drops below 45`), `−${now.score - 44} ${P}`]);
+    if (now.cls !== 'good') lv.push([L(`Für „Weiter laufen lassen“ braucht es „Gut geeignet“ (Score ab 65${now.gateFail ? ' und bestandene 83-Tage-Prüfung' : ''})`, `“Keep running” requires “Well suited” (score from 65${now.gateFail ? ' and a passed 83-day check' : ''})`), now.score >= 65 ? L('83-Tage-Prüfung', '83-day check') : `+${65 - now.score} ${P}`]);
+    else lv.push([L(`${WATCH}, wenn der Score unter 65 fällt`, `${WATCH} if the score drops below 65`), `−${now.score - 64} ${P}`]);
   }
 
   // Eignung: mit Score-Details oder (zu wenig Historie) einfache Prüfung
-  const simple = (label, v) => `<p class="wy-p"><b>${label}:</b> ${verdictLabel(v.cls)} – zu wenig Kurshistorie für den Punkte-Score, daher einfache Prüfung: Preisspanne ${wyNf(v.rangePct, 1)} %, Trend-Anteil ${wyNf(v.driftRatio * 100, 0)} % (unter 40 % = gut, über 65 % = ungeeignet).</p>`;
+  const simple = (label, v) => `<p class="wy-p"><b>${label}:</b> ${verdictLabel(v.cls)} – ${L(`zu wenig Kurshistorie für den Punkte-Score, daher einfache Prüfung: Preisspanne ${wyNf(v.rangePct, 1)} %, Trend-Anteil ${wyNf(v.driftRatio * 100, 0)} % (unter 40 % = gut, über 65 % = ungeeignet).`, `too little price history for the points score, so a simple check: price range ${wyNf(v.rangePct, 1)} %, trend share ${wyNf(v.driftRatio * 100, 0)} % (below 40 % = good, above 65 % = unsuitable).`)}</p>`;
   const suit = now
     ? `<div class="wy-score-row"><span class="wy-score-big">${now.score}<small> / 100 · ${verdictLabel(now.cls)}</small></span><span class="wy-score-note">${start
-        ? `Start: ${start.score} (${verdictLabel(start.cls)}), <span class="${wyDeltaCls(now.score - start.score)}">${wyDeltaTxt(now.score - start.score)} ${Math.abs(now.score - start.score) === 1 ? 'Punkt' : 'Punkte'}</span>`
-        : `Start: ${verdictLabel(verdictAtStart.cls)} (ohne Score)`}</span></div>
+        ? `Start: ${start.score} (${verdictLabel(start.cls)}), <span class="${wyDeltaCls(now.score - start.score)}">${wyDeltaTxt(now.score - start.score)} ${Math.abs(now.score - start.score) === 1 ? L('Punkt', 'point') : L('Punkte', 'points')}</span>`
+        : `Start: ${verdictLabel(verdictAtStart.cls)} ${L('(ohne Score)', '(no score)')}`}</span></div>
       ${wyScale(now.score, start ? start.score : null)}
       <div class="wy-gap">${wyPointsBar(now, start)}</div>`
-    : simple('Jetzt', verdictNow) + (start ? '' : simple('Start', verdictAtStart));
+    : simple(L('Jetzt', 'Now'), verdictNow) + (start ? '' : simple('Start', verdictAtStart));
   const vol = verdictNow.vol;
 
   return `
-    <div class="wy-sec"><div class="wy-lead ${rec.level}"><b>Kurz gesagt:</b> ${lead}</div></div>
+    <div class="wy-sec"><div class="wy-lead ${rec.level}"><b>${L('Kurz gesagt:', 'In short:')}</b> ${lead}</div></div>
     <div class="wy-sec">
-      <h4 class="wy-h">Entscheidungsweg</h4>
+      <h4 class="wy-h">${L('Entscheidungsweg', 'Decision path')}</h4>
       <ol class="wy-chain">${chain}</ol>
-      <p class="wy-hint">Von oben nach unten geprüft; die erste zutreffende Regel entscheidet. Die Kursposition kommt zuerst, weil ein Bot ausserhalb seiner Range nicht mehr handelt.</p>
+      <p class="wy-hint">${L('Von oben nach unten geprüft; die erste zutreffende Regel entscheidet. Die Kursposition kommt zuerst, weil ein Bot ausserhalb seiner Range nicht mehr handelt.', 'Checked from top to bottom; the first matching rule decides. Price position comes first because a bot outside its range no longer trades.')}</p>
     </div>
     <div class="wy-sec">
-      <h4 class="wy-h">Kurs seit Start (${wyDate(startMs)})</h4>
+      <h4 class="wy-h">${L('Kurs seit Start', 'Price since start')} (${wyDate(startMs)})</h4>
       ${wyChartBox('mo-whyChart')}
       ${wyFacts([
-        [f(price), `Kurs jetzt${quote ? ` (${quote})` : ''}`, inside ? '' : 'bad'],
-        [chg == null ? '–' : wyPct(chg), `seit Start ${f(bot.startPrice)}`, chg == null ? '' : chg >= 0 ? 'good' : 'bad'],
-        [inside ? 'innerhalb' : wyPct(below ? -out : out), inside ? 'Kursposition' : 'ausserhalb der Range', inside ? 'good' : out > 10 ? 'bad' : 'warn'],
-        [days < 1 ? '< 1 Tag' : wyPlural(Math.round(days), 'Tag', 'Tage'), 'Laufzeit'],
+        [f(price), `${L('Kurs jetzt', 'Price now')}${quote ? ` (${quote})` : ''}`, inside ? '' : 'bad'],
+        [chg == null ? '–' : wyPct(chg), `${L('seit Start', 'since start')} ${f(bot.startPrice)}`, chg == null ? '' : chg >= 0 ? 'good' : 'bad'],
+        [inside ? L('innerhalb', 'inside') : wyPct(below ? -out : out), inside ? L('Kursposition', 'Price position') : L('ausserhalb der Range', 'outside the range'), inside ? 'good' : out > 10 ? 'bad' : 'warn'],
+        [days < 1 ? L('< 1 Tag', '< 1 day') : wyPlural(Math.round(days), L('Tag', 'day'), L('Tage', 'days')), L('Laufzeit', 'Runtime')],
       ])}
     </div>
     <div class="wy-sec">
-      <h4 class="wy-h">Eignung: Start → Jetzt</h4>
+      <h4 class="wy-h">${L('Eignung: Start → Jetzt', 'Suitability: start → now')}</h4>
       ${suit}
     </div>
     ${now ? `<div class="wy-sec">
-      <h4 class="wy-h">Messwerte und Punkte</h4>
+      <h4 class="wy-h">${L('Messwerte und Punkte', 'Values and points')}</h4>
       ${wyCritTable(now, start)}
       ${wyGate(now)}
     </div>` : ''}
     <div class="wy-sec">
-      <h4 class="wy-h">Nächste Schwellen</h4>
+      <h4 class="wy-h">${L('Nächste Schwellen', 'Next thresholds')}</h4>
       ${lv.map(([t, v]) => `<div class="wy-lever"><span>${t}</span><b>${v}</b></div>`).join('')}
-      ${now ? wyHow(now, `<tr><td>Prüfintervall</td><td>aus der Schwankung der letzten ~83 Tage: über 40 % täglich, über 25 % alle 2–3 Tage, über 12 % wöchentlich, sonst alle 1–2 Wochen. Aktuell ${wyNf(vol, 0)} % → „${recommendCheckInterval(vol)}“.</td></tr>`) : ''}
+      ${now ? wyHow(now, `<tr><td>${L('Prüfintervall', 'Check interval')}</td><td>${L(`aus der Schwankung der letzten ~83 Tage: über 40 % täglich, über 25 % alle 2–3 Tage, über 12 % wöchentlich, sonst alle 1–2 Wochen. Aktuell ${wyNf(vol, 0)} % → „${recommendCheckInterval(vol)}“.`, `from the fluctuation of the last ~83 days: above 40 % daily, above 25 % every 2–3 days, above 12 % weekly, otherwise every 1–2 weeks. Currently ${wyNf(vol, 0)} % → “${recommendCheckInterval(vol)}”.`)}</td></tr>`) : ''}
     </div>
-    <p class="wy-foot">Geprüft am ${new Date(data.priceTime).toLocaleString('de-CH', { dateStyle: 'short', timeStyle: 'short' })} · Eignung jeweils aus 500 4h-Kerzen vor dem Start bzw. bis jetzt · Empfohlenes Prüfintervall: ${recommendCheckInterval(vol)}. Keine Anlageberatung.</p>
+    <p class="wy-foot">${L('Geprüft am', 'Checked on')} ${new Date(data.priceTime).toLocaleString(DATE_LOCALE, { dateStyle: 'short', timeStyle: 'short' })} · ${L(`Eignung jeweils aus 500 4h-Kerzen vor dem Start bzw. bis jetzt · Empfohlenes Prüfintervall: ${recommendCheckInterval(vol)}. Keine Anlageberatung.`, `Suitability from 500 4h candles before the start and up to now respectively · Recommended check interval: ${recommendCheckInterval(vol)}. Not investment advice.`)}</p>
   `;
 }
 
@@ -2789,18 +3020,18 @@ function moDrawWhyChart(bot, data) {
   const out = moOutsidePct(price, bot.lower, bot.upper);
   const below = price < bot.lower, inside = out === 0;
   const hlines = [
-    { v: bot.upper, label: 'Obergrenze', color: 'rgba(79,157,255,.7)', dash: '0', tcolor: '#c9d4e3' },
-    { v: bot.lower, label: 'Untergrenze', color: 'rgba(79,157,255,.7)', dash: '0', tcolor: '#c9d4e3' },
+    { v: bot.upper, label: L('Obergrenze', 'Upper'), color: 'rgba(79,157,255,.7)', dash: '0', tcolor: '#c9d4e3' },
+    { v: bot.lower, label: L('Untergrenze', 'Lower'), color: 'rgba(79,157,255,.7)', dash: '0', tcolor: '#c9d4e3' },
   ];
   if (bot.startPrice > 0) hlines.push({ v: bot.startPrice, label: 'Start', color: '#6b7380' });
   if (bot.stopLoss > 0) hlines.push({ v: bot.stopLoss, label: 'SL', color: 'rgba(255,97,97,.5)', dash: '2 3' });
   if (bot.takeProfit > 0) hlines.push({ v: bot.takeProfit, label: 'TP', color: 'rgba(62,207,142,.5)', dash: '2 3' });
-  if (!inside) hlines.push({ v: below ? bot.lower * 0.9 : bot.upper * 1.1, label: 'Stoppen ab', color: 'rgba(255,97,97,.8)', tcolor: '#ff8a8a' });
+  if (!inside) hlines.push({ v: below ? bot.lower * 0.9 : bot.upper * 1.1, label: L('Stoppen ab', 'Stop from'), color: 'rgba(255,97,97,.8)', tcolor: '#ff8a8a' });
   wyLineChart(el, {
     series: candles.map((c) => c.close), t0: candles[0].time, dt: 4 * 3600e3,
     fmt: (v) => moFmtSymPrice(v, bot.symbol), band: { lo: bot.lower, hi: bot.upper }, hlines,
     lastColor: inside ? 'var(--good)' : out > 10 ? 'var(--bad)' : 'var(--warn)',
-    note: full ? 'blau = Grid-Range' : 'blau = Grid-Range · nur letzte ~83 Tage geladen',
+    note: full ? L('blau = Grid-Range', 'blue = grid range') : L('blau = Grid-Range · nur letzte ~83 Tage geladen', 'blue = grid range · only last ~83 days loaded'),
   });
 }
 
@@ -2812,22 +3043,22 @@ function moRenderBotCard(bot, data) {
     <div class="head">
       <h4>${pairLink(bot.symbol, bot.symbol, bot.quote)} · ${bot.grids} Grids ${gridModeLabel(bot.mode).toLowerCase()} · ${fmt6(bot.lower)}–${fmt6(bot.upper)}</h4>
       <div class="row">
-        <button type="button" class="badge badge-btn ${rec.level}" title="Warum diese Beurteilung?">${rec.text}</button>
+        <button type="button" class="badge badge-btn ${rec.level}" title="${L('Warum diese Beurteilung?', 'Why this rating?')}">${rec.text}</button>
       </div>
     </div>
     <p class="note" style="margin:0 0 10px">${rec.reason}</p>
-    ${bot.note ? `<div class="bot-note"><span class="status">Notiz: </span>${escapeHtml(bot.note)}</div>` : ''}
+    ${bot.note ? `<div class="bot-note"><span class="status">${L('Notiz', 'Note')}: </span>${escapeHtml(bot.note)}</div>` : ''}
     <div class="metrics">
-      <div class="metric"><div class="k">Aktueller Kurs</div><div class="v">${moCurrentPriceText(bot, data)}</div></div>
-      <div class="metric"><div class="k">Empfohlenes Prüfintervall</div><div class="v">${recommendCheckInterval(data.verdictNow.vol)}</div></div>
-      <div class="metric metric-wide"><div class="k">Kursposition</div><div class="v">${data.positionText}</div>${moPositionBar(data.currentPrice, bot.lower, bot.upper, bot.symbol)}</div>
-      <div class="metric"><div class="k">Eignung bei Start</div><div class="v">${verdictLabel(data.verdictAtStart.cls)}${data.verdictAtStart.score != null ? ' (' + data.verdictAtStart.score + ')' : ''}</div></div>
-      <div class="metric"><div class="k">Eignung aktuell</div><div class="v">${verdictLabel(data.verdictNow.cls)}${data.verdictNow.score != null ? ' (' + data.verdictNow.score + ')' : ''}</div></div>
+      <div class="metric"><div class="k">${L('Aktueller Kurs', 'Current price')}</div><div class="v">${moCurrentPriceText(bot, data)}</div></div>
+      <div class="metric"><div class="k">${L('Empfohlenes Prüfintervall', 'Recommended check interval')}</div><div class="v">${recommendCheckInterval(data.verdictNow.vol)}</div></div>
+      <div class="metric metric-wide"><div class="k">${L('Kursposition', 'Price position')}</div><div class="v">${data.positionText}</div>${moPositionBar(data.currentPrice, bot.lower, bot.upper, bot.symbol)}</div>
+      <div class="metric"><div class="k">${L('Eignung bei Start', 'Suitability at start')}</div><div class="v">${verdictLabel(data.verdictAtStart.cls)}${data.verdictAtStart.score != null ? ' (' + data.verdictAtStart.score + ')' : ''}</div></div>
+      <div class="metric"><div class="k">${L('Eignung aktuell', 'Current suitability')}</div><div class="v">${verdictLabel(data.verdictNow.cls)}${data.verdictNow.score != null ? ' (' + data.verdictNow.score + ')' : ''}</div></div>
     </div>
     <table class="details">
-      <tr><td>Start</td><td>${bot.startDate}${bot.startTime ? ' ' + bot.startTime : ''} · Startkurs ${fmt6(bot.startPrice)}</td></tr>
-      <tr><td>Preisspanne bei Start (83 Tage davor)</td><td>${data.verdictAtStart.rangePct.toFixed(1)}% · Trend-Anteil ${(data.verdictAtStart.driftRatio * 100).toFixed(0)}%</td></tr>
-      <tr><td>Preisspanne aktuell (letzte 83 Tage)</td><td>${data.verdictNow.rangePct.toFixed(1)}% · Trend-Anteil ${(data.verdictNow.driftRatio * 100).toFixed(0)}%</td></tr>
+      <tr><td>Start</td><td>${bot.startDate}${bot.startTime ? ' ' + bot.startTime : ''} · ${L('Startkurs', 'Start price')} ${fmt6(bot.startPrice)}</td></tr>
+      <tr><td>${L('Preisspanne bei Start (83 Tage davor)', 'Price range at start (83 days before)')}</td><td>${data.verdictAtStart.rangePct.toFixed(1)}% · ${L('Trend-Anteil', 'Trend share')} ${(data.verdictAtStart.driftRatio * 100).toFixed(0)}%</td></tr>
+      <tr><td>${L('Preisspanne aktuell (letzte 83 Tage)', 'Current price range (last 83 days)')}</td><td>${data.verdictNow.rangePct.toFixed(1)}% · ${L('Trend-Anteil', 'Trend share')} ${(data.verdictNow.driftRatio * 100).toFixed(0)}%</td></tr>
     </table>
   `;
   card.querySelector('.badge-btn').addEventListener('click', () => {
@@ -2849,7 +3080,7 @@ function moRenderErrorCard(bot, message) {
   card.innerHTML = `
     <div class="head">
       <h4>${pairLink(bot.symbol, bot.symbol, bot.quote)} · ${bot.grids} Grids</h4>
-      <span class="badge warn">Fehler</span>
+      <span class="badge warn">${L('Fehler', 'Error')}</span>
     </div>
     <p class="note">${message}</p>
   `;
@@ -2861,12 +3092,12 @@ async function moCheckAllBots() {
   const status = $('mo-checkStatus');
   const results = $('mo-results');
   results.innerHTML = '';
-  if (!bots.length) { status.textContent = 'Keine Bots hinterlegt.'; return; }
+  if (!bots.length) { status.textContent = L('Keine Bots hinterlegt.', 'No bots saved.'); return; }
 
   $('mo-checkAllBtn').disabled = true;
   for (let i = 0; i < bots.length; i++) {
     const bot = bots[i];
-    status.textContent = `Prüfe ${bot.symbol} (${i + 1}/${bots.length}) …`;
+    status.textContent = L(`Prüfe ${bot.symbol} (${i + 1}/${bots.length}) …`, `Checking ${bot.symbol} (${i + 1}/${bots.length}) …`);
     try {
       const startMs = dateTimeToMs(bot.startDate, bot.startTime);
       const [candlesAtStart, candlesNow] = await Promise.all([
@@ -2874,7 +3105,7 @@ async function moCheckAllBots() {
         fetchKlines(bot.symbol, '4h', { limit: 500 }),
       ]);
       if (candlesAtStart.length < 10 || candlesNow.length < 10) {
-        results.appendChild(moRenderErrorCard(bot, 'Zu wenig Kursdaten für eine verlässliche Prüfung.'));
+        results.appendChild(moRenderErrorCard(bot, L('Zu wenig Kursdaten für eine verlässliche Prüfung.', 'Not enough price data for a reliable check.')));
         continue;
       }
       const verdictAtStart = evaluateSuitability(candlesAtStart);
@@ -2887,10 +3118,10 @@ async function moCheckAllBots() {
       results.appendChild(moRenderBotCard(bot, { verdictAtStart, verdictNow, currentPrice, priceTime, positionText, rec, candlesNow }));
     } catch (e) {
       console.error(e);
-      results.appendChild(moRenderErrorCard(bot, 'Fehler beim Laden der Kursdaten: ' + e.message));
+      results.appendChild(moRenderErrorCard(bot, L('Fehler beim Laden der Kursdaten: ', 'Error loading price data: ') + e.message));
     }
   }
-  status.textContent = `Fertig – ${bots.length} Bot(s) geprüft.`;
+  status.textContent = L(`Fertig – ${bots.length} Bot(s) geprüft.`, `Done – ${bots.length} bot(s) checked.`);
   $('mo-checkAllBtn').disabled = false;
 }
 
@@ -2916,21 +3147,21 @@ async function moPrefillForm({ symbol, grids, lower, upper, mode = '', stopLoss 
   $('mo-startPrice').value = '';
   $('mo-investment').value = '';
   const status = $('mo-addStatus');
-  status.textContent = 'Lade aktuellen Kurs …';
+  status.textContent = L('Lade aktuellen Kurs …', 'Loading current price …');
   try {
     const t = await apiGet('/api/v3/ticker/price', { symbol });
     if ($('mo-symbol').value !== symbol) return;
     $('mo-startPrice').value = priceToInput(+t.price, dec);
-    status.textContent = 'Empfehlung übernommen – prüfen und mit „Bot hinzufügen“ speichern.';
+    status.textContent = L('Empfehlung übernommen – prüfen und mit „Bot hinzufügen“ speichern.', 'Recommendation applied – check it and save with “Add bot”.');
   } catch (e) {
-    status.textContent = 'Aktueller Kurs konnte nicht geladen werden – bitte Startkurs eintragen.';
+    status.textContent = L('Aktueller Kurs konnte nicht geladen werden – bitte Startkurs eintragen.', 'Current price could not be loaded – please enter the start price.');
   }
   $('mo-symbol').closest('.card').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 // Einheit hinter "Investment" = gewähltes Quote-Asset
 function moSyncInvestUnit() {
-  $('mo-investUnit').textContent = $('mo-quote').value || 'Quote-Asset';
+  $('mo-investUnit').textContent = $('mo-quote').value || L('Quote-Asset', 'quote asset');
 }
 
 function initMonitorTab() {
@@ -2956,40 +3187,40 @@ function initMonitorTab() {
     const stopLoss = slRaw ? parseNum(slRaw) : null;
     const takeProfit = tpRaw ? parseNum(tpRaw) : null;
 
-    if (!symbols.includes(symbol)) { status.textContent = 'Unbekanntes Währungspaar.'; return; }
-    if (!(grids >= 2)) { status.textContent = 'Mindestens 2 Grids.'; return; }
-    if (!GRID_MODES[mode]) { status.textContent = 'Bitte Grid-Modus wählen (Arithmetisch oder Geometrisch).'; return; }
-    if (!(investment > 0)) { status.textContent = 'Bitte Investment angeben (grösser als 0).'; return; }
-    if (!(lower > 0) || !(upper > lower)) { status.textContent = 'Obere Grenze muss grösser als die untere sein.'; return; }
+    if (!symbols.includes(symbol)) { status.textContent = L('Unbekanntes Währungspaar.', 'Unknown trading pair.'); return; }
+    if (!(grids >= 2)) { status.textContent = L('Mindestens 2 Grids.', 'At least 2 grids.'); return; }
+    if (!GRID_MODES[mode]) { status.textContent = L('Bitte Grid-Modus wählen (Arithmetisch oder Geometrisch).', 'Please select a grid mode (arithmetic or geometric).'); return; }
+    if (!(investment > 0)) { status.textContent = L('Bitte Investment angeben (grösser als 0).', 'Please enter the investment (greater than 0).'); return; }
+    if (!(lower > 0) || !(upper > lower)) { status.textContent = L('Obere Grenze muss grösser als die untere sein.', 'Upper bound must be greater than the lower one.'); return; }
     // Binance-Regel (Spot-Grid-FAQ): SL unter der unteren, TP über der oberen Grenze
-    if (stopLoss != null && !(stopLoss > 0 && stopLoss < lower)) { status.textContent = 'Stop-Loss muss unter der unteren Grenze liegen (Binance-Vorgabe).'; return; }
-    if (takeProfit != null && !(takeProfit > upper)) { status.textContent = 'Take-Profit muss über der oberen Grenze liegen (Binance-Vorgabe).'; return; }
-    if (!(startPrice > 0)) { status.textContent = 'Bitte Startkurs angeben.'; return; }
-    if (!startDate) { status.textContent = 'Bitte Startdatum angeben.'; return; }
-    if (!(dateTimeToMs(startDate, startTime) <= Date.now())) { status.textContent = 'Startzeitpunkt darf nicht in der Zukunft liegen.'; return; }
+    if (stopLoss != null && !(stopLoss > 0 && stopLoss < lower)) { status.textContent = L('Stop-Loss muss unter der unteren Grenze liegen (Binance-Vorgabe).', 'Stop-loss must be below the lower bound (Binance rule).'); return; }
+    if (takeProfit != null && !(takeProfit > upper)) { status.textContent = L('Take-Profit muss über der oberen Grenze liegen (Binance-Vorgabe).', 'Take-profit must be above the upper bound (Binance rule).'); return; }
+    if (!(startPrice > 0)) { status.textContent = L('Bitte Startkurs angeben.', 'Please enter the start price.'); return; }
+    if (!startDate) { status.textContent = L('Bitte Startdatum angeben.', 'Please enter the start date.'); return; }
+    if (!(dateTimeToMs(startDate, startTime) <= Date.now())) { status.textContent = L('Startzeitpunkt darf nicht in der Zukunft liegen.', 'Start time must not be in the future.'); return; }
 
     if (moEditId != null) {
       const bots = loadBots();
       const b = bots.find((x) => x.id === moEditId);
-      if (!b) { moEndEdit(); status.textContent = 'Bot ist nicht mehr hinterlegt (inzwischen gestoppt?).'; return; }
+      if (!b) { moEndEdit(); status.textContent = L('Bot ist nicht mehr hinterlegt (inzwischen gestoppt?).', 'Bot is no longer saved (stopped in the meantime?).'); return; }
       Object.assign(b, { grids, mode, lower, upper, stopLoss, takeProfit, startPrice, startDate, startTime, investment });
       saveBots(bots);
       moEndEdit();
       renderBotList();
-      status.textContent = `${symbol} angepasst.`;
+      status.textContent = L(`${symbol} angepasst.`, `${symbol} updated.`);
       moClearForm();
       return;
     }
 
     addBot({ symbol, grids, lower, upper, stopLoss, takeProfit, startPrice, startDate, startTime, investment, quote: symbolMap.get(symbol).quote, mode });
-    status.textContent = 'Bot hinzugefügt.';
+    status.textContent = L('Bot hinzugefügt.', 'Bot added.');
     moClearForm();
   });
 
   $('mo-cancelEditBtn').addEventListener('click', () => {
     moEndEdit();
     moClearForm();
-    $('mo-addStatus').textContent = 'Anpassen abgebrochen.';
+    $('mo-addStatus').textContent = L('Anpassen abgebrochen.', 'Editing cancelled.');
   });
 
   $('mo-checkAllBtn').addEventListener('click', moCheckAllBots);
@@ -3096,6 +3327,29 @@ function scLin(v, a, b, max) {
   return Math.max(0, Math.min(1, t)) * max;
 }
 
+// Texte der Scanner-Bewertung (Gründe, Fehler) in beiden Sprachen. Gespeicherte Ergebnisse enthalten
+// die Sprache, in der bewertet wurde; scReasonText zeigt sie in der aktuellen Sprache an.
+const SC_TEXTS = [
+  ['gerichtete Bewegung (CHOP niedrig)', 'directional movement (low CHOP)'],
+  ['effizienter Trend (ER hoch)', 'efficient trend (high ER)'],
+  ['wenig Bewegung', 'little movement'],
+  ['sehr volatil', 'very volatile'],
+  ['schwache Grid-Simulation', 'weak grid simulation'],
+  ['Eignungsprüfung negativ (83-Tage-Trend)', 'suitability check negative (83-day trend)'],
+  ['Zu wenig Historie', 'Too little history'],
+  ['Ladefehler', 'Load error'],
+  ['Binance-Ordervorgaben konnten nicht geladen werden', 'Binance order limits could not be loaded'],
+];
+const SC_DOWNGRADE = SC_TEXTS[5];
+function scReasonText(s) {
+  if (s == null) return s;
+  const hit = SC_TEXTS.find((p) => p.includes(s));
+  if (hit) return L(hit[0], hit[1]);
+  const fail = /^(Berechnung fehlgeschlagen|Calculation failed): /.exec(s);
+  if (fail) return L('Berechnung fehlgeschlagen: ', 'Calculation failed: ') + s.slice(fail[0].length);
+  return s; // "Trend (ADX n)" ist in beiden Sprachen gleich
+}
+
 // Gemeinsame Eignungsbewertung für Scanner, Analyse-Tab und Monitoring. Das 24h-Volumen wird aus
 // den letzten 6 4h-Kerzen genommen, damit alle Tabs mit identischen Eingaben rechnen (und die
 // Bewertung auch für historische Zeitpunkte im Monitoring funktioniert).
@@ -3107,7 +3361,7 @@ function scEvaluate(c4) {
   const chop = scCHOP(daily);
   const er = scER(daily);
   const atrPct = scATRPct(daily);
-  if (adx == null || chop == null || er == null || atrPct == null) return { error: 'Zu wenig Historie' };
+  if (adx == null || chop == null || er == null || atrPct == null) return { error: L('Zu wenig Historie', 'Too little history') };
 
   // Grid-Simulation: Range wie bei der Empfehlung (Support/Resistance, 90% Abdeckung),
   // Grid-Anzahl so, dass der Abstand an der Obergrenze des Literatur-Bands (~2%) liegt.
@@ -3120,11 +3374,11 @@ function scEvaluate(c4) {
   const score = Math.round(points.adx + points.chop + points.er + points.atr + points.sim + points.vol);
 
   if (adx > 25) reasons.push(`Trend (ADX ${adx.toFixed(0)})`);
-  if (chop < 38.2) reasons.push('gerichtete Bewegung (CHOP niedrig)');
-  if (er > 0.4) reasons.push('effizienter Trend (ER hoch)');
-  if (atrPct < 2) reasons.push('wenig Bewegung');
-  if (atrPct > 8) reasons.push('sehr volatil');
-  if (sim.gridProfitPct < 3) reasons.push('schwache Grid-Simulation');
+  if (chop < 38.2) reasons.push(L('gerichtete Bewegung (CHOP niedrig)', 'directional movement (low CHOP)'));
+  if (er > 0.4) reasons.push(L('effizienter Trend (ER hoch)', 'efficient trend (high ER)'));
+  if (atrPct < 2) reasons.push(L('wenig Bewegung', 'little movement'));
+  if (atrPct > 8) reasons.push(L('sehr volatil', 'very volatile'));
+  if (sim.gridProfitPct < 3) reasons.push(L('schwache Grid-Simulation', 'weak grid simulation'));
 
   let cls = score >= 65 ? 'good' : score >= 45 ? 'warn' : 'bad';
   // Konsistenz mit der Eignungsprüfung im Analyse-Tab (83-Tage-Trend / zu enge Spanne)
@@ -3133,7 +3387,7 @@ function scEvaluate(c4) {
   if (assess.cls === 'bad' && cls === 'good') {
     cls = 'warn';
     downgraded = true;
-    reasons.push('Eignungsprüfung negativ (83-Tage-Trend)');
+    reasons.push(L('Eignungsprüfung negativ (83-Tage-Trend)', 'suitability check negative (83-day trend)'));
   }
   const isStableLike = price > 0.97 && price < 1.03 && atrPct < 0.5;
   return {
@@ -3167,21 +3421,24 @@ function scPoints({ adx, chop, er, atrPct, gridProfit, volume }) {
 // Fallback auf die einfache Spannen/Drift-Prüfung, wenn für den Score zu wenig Historie da ist.
 function evaluateSuitability(c4) {
   const assess = assessSuitability(c4);
-  const ev = c4.length >= 60 ? scEvaluate(c4) : { error: 'Zu wenig Historie' };
+  const ev = c4.length >= 60 ? scEvaluate(c4) : { error: L('Zu wenig Historie', 'Too little history') };
   if (ev.error) return { ...assess, score: null, ev: null };
-  const why = ev.reasons.length ? ` Einschränkungen: ${ev.reasons.join(', ')}.` : '';
+  const why = ev.reasons.length ? ` ${L('Einschränkungen', 'Limitations')}: ${ev.reasons.join(', ')}.` : '';
   const text = {
-    good: `Gut geeignet (Score ${ev.score}/100): Die Kriterien (Seitwärtsbewegung, Schwankung, Grid-Simulation, Liquidität) sprechen insgesamt für einen Grid-Bot.${why}`,
-    warn: `Bedingt geeignet (Score ${ev.score}/100): Einige Kriterien sprechen gegen einen Grid-Bot.${why}`,
-    bad: `Ungeeignet (Score ${ev.score}/100): Die Kursbewegung passt aktuell nicht zu einem Grid-Bot.${why}`,
+    good: L(`Gut geeignet (Score ${ev.score}/100): Die Kriterien (Seitwärtsbewegung, Schwankung, Grid-Simulation, Liquidität) sprechen insgesamt für einen Grid-Bot.${why}`,
+      `Well suited (score ${ev.score}/100): Overall, the criteria (sideways movement, fluctuation, grid simulation, liquidity) favour a grid bot.${why}`),
+    warn: L(`Bedingt geeignet (Score ${ev.score}/100): Einige Kriterien sprechen gegen einen Grid-Bot.${why}`,
+      `Partly suitable (score ${ev.score}/100): Some criteria speak against a grid bot.${why}`),
+    bad: L(`Ungeeignet (Score ${ev.score}/100): Die Kursbewegung passt aktuell nicht zu einem Grid-Bot.${why}`,
+      `Unsuitable (score ${ev.score}/100): The price movement currently does not suit a grid bot.${why}`),
   }[ev.cls];
   return { ...assess, cls: ev.cls, verdict: text, score: ev.score, ev };
 }
 
 function scFmtVol(v) {
-  if (v >= 1e9) return fmt(v / 1e9, 2) + ' Mrd';
-  if (v >= 1e6) return fmt(v / 1e6, 1) + ' Mio';
-  if (v >= 1e3) return fmt(v / 1e3, 0) + ' Tsd';
+  if (v >= 1e9) return fmt(v / 1e9, 2) + L(' Mrd', ' bn');
+  if (v >= 1e6) return fmt(v / 1e6, 1) + L(' Mio', ' m');
+  if (v >= 1e3) return fmt(v / 1e3, 0) + L(' Tsd', ' k');
   return fmt(v, 0);
 }
 
@@ -3219,23 +3476,23 @@ function scRender() {
   });
   const n = (v, d) => (v == null ? '–' : v.toFixed(d));
   $('sc-list').innerHTML = rows.map((r) => `
-    <tr${r.reasons && r.reasons.length ? ` title="${r.reasons.join(', ')}"` : ''}>
+    <tr${r.reasons && r.reasons.length ? ` title="${r.reasons.map(scReasonText).join(', ')}"` : ''}>
       <td><b>${pairLink(r.symbol, r.base)}</b></td>
-      <td class="num">${fmtPrice(r.price, symbolMap.get(r.symbol)?.decimals).replace(/0+$/, '').replace(/,$/, '')}</td>
+      <td class="num">${fmtPrice(r.price, symbolMap.get(r.symbol)?.decimals).replace(/0+$/, '').replace(/[.,]$/, '')}</td>
       <td class="num ${r.change >= 0 ? 'pos' : 'neg'}">${r.change >= 0 ? '+' : ''}${r.change.toFixed(1)}%</td>
       <td class="num">${scFmtVol(r.volume)}</td>
       <td class="num"><b>${r.score ?? '–'}</b></td>
-      <td>${r.cls ? `<button type="button" class="badge badge-btn ${r.cls}" data-why="${r.symbol}" title="Warum diese Einstufung?">${verdictLabel(r.cls)}</button>` : (r.error ? `<span class="status">${r.error}</span>` : '<span class="status">–</span>')}</td>
+      <td>${r.cls ? `<button type="button" class="badge badge-btn ${r.cls}" data-why="${r.symbol}" title="${L('Warum diese Einstufung?', 'Why this rating?')}">${verdictLabel(r.cls)}</button>` : (r.error ? `<span class="status">${scReasonText(r.error)}</span>` : '<span class="status">–</span>')}</td>
       <td class="num">${n(r.adx, 0)}</td>
       <td class="num">${n(r.chop, 0)}</td>
       <td class="num">${n(r.er, 2)}</td>
       <td class="num">${r.atrPct == null ? '–' : r.atrPct.toFixed(1) + '%'}</td>
       <td class="num">${r.gridProfit == null ? '–' : r.gridProfit.toFixed(1) + '%'}</td>
       <td class="num">${scMinInvestCell(r)}</td>
-      <td><button type="button" class="secondary" data-analyse="${r.symbol}">Analysieren</button></td>
+      <td><button type="button" class="secondary" data-analyse="${r.symbol}">${L('Analysieren', 'Analyse')}</button></td>
     </tr>`).join('');
   const rated = scRows.filter((r) => r.cls).length;
-  $('sc-count').textContent = `${rows.length} Coins angezeigt · ${rated} bewertet`;
+  $('sc-count').textContent = L(`${rows.length} Coins angezeigt · ${rated} bewertet`, `${rows.length} coins shown · ${rated} rated`);
   scUpdateMinInvTitle();
 }
 
@@ -3244,24 +3501,26 @@ function scMinInvestCell(r) {
   if (r.minInvest != null) {
     return `<span data-mininv-at="${r.minInvestAt || ''}" title="${escapeHtml(scMinInvestAgeTitle(r.minInvestAt))}">${fmt(r.minInvest, 0)} USDT</span>`;
   }
-  if (r.minInvestBusy) return '<span class="status">rechnet …</span>';
-  return `<button type="button" class="secondary" data-mininv="${r.symbol}"${r.minInvestErr ? ` title="${escapeHtml(r.minInvestErr)} – erneut versuchen"` : ''}>berechnen</button>`;
+  if (r.minInvestBusy) return `<span class="status">${L('rechnet …', 'calculating …')}</span>`;
+  return `<button type="button" class="secondary" data-mininv="${r.symbol}"${r.minInvestErr ? ` title="${escapeHtml(scReasonText(r.minInvestErr))} – ${L('erneut versuchen', 'try again')}"` : ''}>${L('berechnen', 'calculate')}</button>`;
 }
 
 // Tooltip zum Mindestinvest: Berechnungszeitpunkt, Alter und Hinweis, sobald seit der Berechnung eine neue
 // 1h-Kerze begonnen hat (die Empfehlung basiert auf 1h-Kerzen und kann sich dadurch ändern)
 function scMinInvestAgeTitle(at) {
-  if (!at) return 'Berechnungszeitpunkt unbekannt – Wert kann veraltet sein. Mit „Analysieren“ neu berechnen.';
-  const d = new Date(at).toLocaleString('de-CH', { dateStyle: 'short', timeStyle: 'short' });
+  if (!at) return L('Berechnungszeitpunkt unbekannt – Wert kann veraltet sein. Mit „Analysieren“ neu berechnen.', 'Calculation time unknown – value may be outdated. Recalculate with “Analyse”.');
+  const d = new Date(at).toLocaleString(DATE_LOCALE, { dateStyle: 'short', timeStyle: 'short' });
   const min = Math.max(0, Math.floor((Date.now() - at) / 60000));
-  const age = min < 1 ? 'gerade eben'
-    : min < 60 ? `vor ${min} Min.`
-    : min < 1440 ? `vor ${Math.floor(min / 60)} Std. ${min % 60} Min.`
-    : `vor ${Math.floor(min / 1440)} ${Math.floor(min / 1440) === 1 ? 'Tag' : 'Tagen'}`;
+  const days = Math.floor(min / 1440);
+  const age = min < 1 ? L('gerade eben', 'just now')
+    : min < 60 ? L(`vor ${min} Min.`, `${min} min ago`)
+    : min < 1440 ? L(`vor ${Math.floor(min / 60)} Std. ${min % 60} Min.`, `${Math.floor(min / 60)} h ${min % 60} min ago`)
+    : L(`vor ${days} ${days === 1 ? 'Tag' : 'Tagen'}`, `${days} ${days === 1 ? 'day' : 'days'} ago`);
   const stale = Math.floor(Date.now() / 3600000) > Math.floor(at / 3600000);
-  return `Berechnet am ${d} (${age}).` + (stale
-    ? '\nMöglicherweise veraltet: Seit der Berechnung sind neue 1h-Kerzen dazugekommen. Die Empfehlung (v. a. die Anzahl Grids) und damit der Mindestinvest können sich geändert haben. Aktueller Wert über „Analysieren“.'
-    : '\nAktuell: seit der Berechnung noch keine neue 1h-Kerze.');
+  return L(`Berechnet am ${d} (${age}).`, `Calculated on ${d} (${age}).`) + (stale
+    ? L('\nMöglicherweise veraltet: Seit der Berechnung sind neue 1h-Kerzen dazugekommen. Die Empfehlung (v. a. die Anzahl Grids) und damit der Mindestinvest können sich geändert haben. Aktueller Wert über „Analysieren“.',
+      '\nPossibly outdated: new 1h candles have been added since the calculation. The recommendation (especially the number of grids) and thus the minimum investment may have changed. Get the current value via “Analyse”.')
+    : L('\nAktuell: seit der Berechnung noch keine neue 1h-Kerze.', '\nUp to date: no new 1h candle since the calculation.'));
 }
 
 // Dauer einer Mindestinvest-Berechnung pro Coin (Laden + Optimierung): gleitender Mittelwert der
@@ -3276,18 +3535,18 @@ function scRecordMinInvestMs(ms) {
 }
 function scFmtDuration(ms) {
   const s = Math.max(1, Math.round(ms / 1000));
-  if (s < 60) return `${s} Sekunden`;
+  if (s < 60) return `${s} ${L('Sekunden', 'seconds')}`;
   const min = Math.round(s / 60);
-  if (min < 60) return min === 1 ? '1 Minute' : `${min} Minuten`;
-  return `${Math.floor(min / 60)} Std. ${min % 60} Min.`;
+  if (min < 60) return min === 1 ? '1 Minute' : `${min} ${L('Minuten', 'minutes')}`;
+  return L(`${Math.floor(min / 60)} Std. ${min % 60} Min.`, `${Math.floor(min / 60)} h ${min % 60} min`);
 }
 
 // Tooltip des Buttons "Mindestinvest für gut geeignete Coins berechnen": geschätzte Dauer für die angezeigten Coins
 function scUpdateMinInvTitle() {
   const n = scVisibleRows().filter((r) => r.cls === 'good' && r.minInvest == null).length;
   $('sc-minInvBtn').title = n
-    ? `Die Berechnung dauert ca. ${scFmtDuration(n * (scMinInvestMsPerCoin() + 30))} (${n} ${n === 1 ? 'Coin' : 'Coins'} à ca. ${fmt(scMinInvestMsPerCoin() / 1000, 1)} s).`
-    : 'Keine angezeigten gut geeigneten Coins ohne Mindestinvest.';
+    ? L(`Die Berechnung dauert ca. ${scFmtDuration(n * (scMinInvestMsPerCoin() + 30))} (${n} ${n === 1 ? 'Coin' : 'Coins'} à ca. ${fmt(scMinInvestMsPerCoin() / 1000, 1)} s).`, `The calculation takes approx. ${scFmtDuration(n * (scMinInvestMsPerCoin() + 30))} (${n} ${n === 1 ? 'coin' : 'coins'} at approx. ${fmt(scMinInvestMsPerCoin() / 1000, 1)} s each).`)
+    : L('Keine angezeigten gut geeigneten Coins ohne Mindestinvest.', 'No displayed well-suited coins without a minimum investment.');
 }
 
 // Mindestinvest eines Coins über dieselbe Startempfehlung wie im Tab "Analyse & Optimierung" berechnen
@@ -3304,10 +3563,10 @@ async function scCalcMinInvest(r) {
       r.minInvestAt = Date.now();
       scRecordMinInvestMs(performance.now() - t0);
     } else {
-      r.minInvestErr = 'Binance-Ordervorgaben konnten nicht geladen werden';
+      r.minInvestErr = L('Binance-Ordervorgaben konnten nicht geladen werden', 'Binance order limits could not be loaded');
     }
   } catch (e) {
-    r.minInvestErr = 'Berechnung fehlgeschlagen: ' + e.message;
+    r.minInvestErr = L('Berechnung fehlgeschlagen: ', 'Calculation failed: ') + e.message;
   }
   r.minInvestBusy = false;
   scSaveCache();
@@ -3324,7 +3583,7 @@ async function scMinInvestGood() {
   const visibleGood = scVisibleRows().filter((r) => r.cls === 'good');
   const todo = visibleGood.filter((r) => r.minInvest == null);
   if (!todo.length) {
-    $('sc-status').textContent = visibleGood.length ? 'Alle angezeigten gut geeigneten Coins haben bereits einen Mindestinvest.' : 'Keine gut geeigneten Coins in der Anzeige – Filter prüfen oder zuerst „Alle bewerten“.';
+    $('sc-status').textContent = visibleGood.length ? L('Alle angezeigten gut geeigneten Coins haben bereits einen Mindestinvest.', 'All displayed well-suited coins already have a minimum investment.') : L('Keine gut geeigneten Coins in der Anzeige – Filter prüfen oder zuerst „Alle bewerten“.', 'No well-suited coins displayed – check the filters or run “Rate all” first.');
     return;
   }
   scMinInvRunning = true;
@@ -3335,13 +3594,13 @@ async function scMinInvestGood() {
   let done = 0;
   for (const r of todo) {
     if (scAbort) break;
-    $('sc-status').textContent = `Berechne Mindestinvest der gut geeigneten Coins … ${done + 1}/${todo.length} (${r.base})`;
+    $('sc-status').textContent = L(`Berechne Mindestinvest der gut geeigneten Coins … ${done + 1}/${todo.length} (${r.base})`, `Calculating minimum investment of well-suited coins … ${done + 1}/${todo.length} (${r.base})`);
     await new Promise((res) => setTimeout(res, 30));
     await scCalcMinInvest(r);
     done++;
   }
   const failed = todo.filter((r) => r.minInvestErr).length;
-  $('sc-status').textContent = `${scAbort ? 'Abgebrochen' : 'Fertig'} – Mindestinvest für ${done - failed} von ${todo.length} gut geeigneten Coins berechnet${failed ? `, ${failed} Fehler` : ''} (${new Date().toLocaleString('de-CH', { dateStyle: 'short', timeStyle: 'short' })}).`;
+  $('sc-status').textContent = `${scAbort ? L('Abgebrochen', 'Aborted') : L('Fertig', 'Done')} – ${L(`Mindestinvest für ${done - failed} von ${todo.length} gut geeigneten Coins berechnet`, `minimum investment calculated for ${done - failed} of ${todo.length} well-suited coins`)}${failed ? `, ${failed} ${L('Fehler', 'errors')}` : ''} (${new Date().toLocaleString(DATE_LOCALE, { dateStyle: 'short', timeStyle: 'short' })}).`;
   $('sc-scanBtn').disabled = false;
   $('sc-minInvBtn').disabled = false;
   $('sc-stopBtn').classList.add('hidden');
@@ -3387,7 +3646,7 @@ async function scLoadMarket() {
 
 async function scScanAll() {
   const targets = scVisibleRows();
-  if (!targets.length) { $('sc-status').textContent = 'Keine Coins im Filter.'; return; }
+  if (!targets.length) { $('sc-status').textContent = L('Keine Coins im Filter.', 'No coins in filter.'); return; }
   scAbort = false;
   $('sc-scanBtn').disabled = true;
   $('sc-minInvBtn').disabled = true;
@@ -3398,17 +3657,17 @@ async function scScanAll() {
       const r = targets[next++];
       try {
         const c4 = await fetchKlines(r.symbol, '4h', { limit: 500 });
-        const res = c4.length >= 60 ? scEvaluate(c4) : { error: 'Zu wenig Historie' };
+        const res = c4.length >= 60 ? scEvaluate(c4) : { error: L('Zu wenig Historie', 'Too little history') };
         for (const k of ['adx', 'chop', 'er', 'atrPct', 'gridProfit', 'gridTrades', 'gc', 'score', 'cls', 'reasons', 'error',
           'evVolume', 'downgraded', 'rangePct', 'driftRatio', 'points', 'minInvest', 'minInvestAt', 'minInvestErr']) r[k] = null;
         Object.assign(r, res, { ratedAt: Date.now() });
         if (res.volume != null) r.evVolume = res.volume;
       } catch (e) {
         failed++;
-        r.error = 'Ladefehler';
+        r.error = L('Ladefehler', 'Load error');
       }
       done++;
-      $('sc-status').textContent = `Bewerte … ${done}/${targets.length}${failed ? ` (${failed} Fehler)` : ''}`;
+      $('sc-status').textContent = `${L('Bewerte', 'Rating')} … ${done}/${targets.length}${failed ? ` (${failed} ${L('Fehler', 'errors')})` : ''}`;
       if (done % 20 === 0) scRender();
     }
   };
@@ -3417,7 +3676,7 @@ async function scScanAll() {
   scSaveCache();
   if (scSort.key === 'volume') scSort = { key: 'score', dir: -1 };
   scRender();
-  $('sc-status').textContent = `${scAbort ? 'Abgebrochen' : 'Fertig'} – ${done} Coins bewertet${failed ? `, ${failed} Fehler` : ''} (${new Date().toLocaleString('de-CH', { dateStyle: 'short', timeStyle: 'short' })}).`;
+  $('sc-status').textContent = `${scAbort ? L('Abgebrochen', 'Aborted') : L('Fertig', 'Done')} – ${done} ${L('Coins bewertet', 'coins rated')}${failed ? `, ${failed} ${L('Fehler', 'errors')}` : ''} (${new Date().toLocaleString(DATE_LOCALE, { dateStyle: 'short', timeStyle: 'short' })}).`;
   $('sc-scanBtn').disabled = false;
   $('sc-minInvBtn').disabled = false;
   $('sc-stopBtn').classList.add('hidden');
@@ -3426,18 +3685,18 @@ async function scScanAll() {
 async function scEnsureInit() {
   if (scInitDone || !symbolMeta.length) return;
   scInitDone = true;
-  $('sc-status').textContent = 'Lade Marktdaten …';
+  $('sc-status').textContent = L('Lade Marktdaten …', 'Loading market data …');
   try {
     const cacheTime = await scLoadMarket();
     scRender();
     $('sc-status').textContent = cacheTime
-      ? `Letzte Bewertung: ${new Date(cacheTime).toLocaleString('de-CH', { dateStyle: 'short', timeStyle: 'short' })}`
+      ? `${L('Letzte Bewertung', 'Last rating')}: ${new Date(cacheTime).toLocaleString(DATE_LOCALE, { dateStyle: 'short', timeStyle: 'short' })}`
       : '';
     $('sc-scanBtn').disabled = false;
     $('sc-minInvBtn').disabled = false;
   } catch (e) {
     scInitDone = false;
-    $('sc-status').textContent = 'Marktdaten konnten nicht geladen werden: ' + e.message;
+    $('sc-status').textContent = L('Marktdaten konnten nicht geladen werden: ', 'Market data could not be loaded: ') + e.message;
   }
 }
 
@@ -3455,13 +3714,16 @@ function scOpenWhy(symbol) {
   if (r) scShowWhy(r);
 }
 
+const SC_FACT_LABELS = [L('Veränderung Start → Ende', 'Change start → end'), L('Spanne Tief → Hoch', 'Range low → high'),
+  L('Trend-Anteil (Netto ÷ Spanne)', 'Trend share (net ÷ range)'), L('Kurs bei Bewertung', 'Price at rating')];
+
 // Modal für ein Zeilenobjekt (Scanner-Zeile oder Analyse-Ergebnis); fromAnalyse blendet "Analysieren" aus
 function scShowWhy(r, { fromAnalyse = false } = {}) {
   if (!r || !r.cls) return;
   const volume = r.evVolume ?? r.volume;
   // Ältere Cache-Einträge enthalten keine Einzelpunkte – aus den gespeicherten Kennzahlen neu berechnen
   const points = r.points || scPoints({ adx: r.adx, chop: r.chop, er: r.er, atrPct: r.atrPct, gridProfit: r.gridProfit, volume });
-  const downgraded = r.downgraded ?? (r.reasons || []).some((x) => x.startsWith('Eignungsprüfung negativ'));
+  const downgraded = r.downgraded ?? (r.reasons || []).some((x) => SC_DOWNGRADE.includes(x));
   const rt = wyRating({ ...r, volume, points, downgraded }, r.score, r.cls, r.rangePct, r.driftRatio);
   const { crit, score, cls } = rt;
 
@@ -3470,51 +3732,55 @@ function scShowWhy(r, { fromAnalyse = false } = {}) {
   const lostSum = Math.round(crit.reduce((s, c) => s + c.lost, 0));
   const top = losers.slice(0, 2);
   const topLost = Math.round(top.reduce((s, c) => s + c.lost, 0));
-  const topNames = top.map((c) => c.name).join(' und ');
+  const topNames = top.map((c) => c.name).join(L(' und ', ' and '));
+  const costs = top.length === 1 ? L('kostet', 'costs') : L('kosten zusammen', 'together cost');
   const lead = {
-    good: `${winners.length} von 6 Kriterien passen. ${losers.length ? `Punkte verloren vor allem bei ${topNames}.` : 'Kaum Punkte verloren.'}`,
+    good: L(`${winners.length} von 6 Kriterien passen. ${losers.length ? `Punkte verloren vor allem bei ${topNames}.` : 'Kaum Punkte verloren.'}`,
+      `${winners.length} of 6 criteria fit. ${losers.length ? `Points lost mainly on ${topNames}.` : 'Hardly any points lost.'}`),
     warn: rt.downgraded
-      ? 'Nach Punkten „Gut geeignet“, aber die 83-Tage-Prüfung schlägt an – deshalb nur „Bedingt geeignet“.'
-      : top.length ? `Gemischtes Bild: ${topNames} kost${top.length === 1 ? 'et' : 'en zusammen'} ${wyPlural(topLost, 'Punkt', 'Punkte')}.` : 'Gemischtes Bild: viele kleine Abzüge.',
-    bad: top.length ? `${topNames} kost${top.length === 1 ? 'et' : 'en zusammen'} ${topLost} der ${lostSum} verlorenen Punkte.` : `${lostSum} Punkte verloren, verteilt auf mehrere Kriterien.`,
-  }[cls] + (cls !== 'good' && winners.length ? ` Stark: ${winners.map((c) => c.name).join(', ')}.` : '');
+      ? L('Nach Punkten „Gut geeignet“, aber die 83-Tage-Prüfung schlägt an – deshalb nur „Bedingt geeignet“.', '“Well suited” by points, but the 83-day check fails – so only “Partly suitable”.')
+      : top.length ? L(`Gemischtes Bild: ${topNames} ${costs} ${wyPlural(topLost, 'Punkt', 'Punkte')}.`, `Mixed picture: ${topNames} ${costs} ${wyPlural(topLost, 'point', 'points')}.`)
+      : L('Gemischtes Bild: viele kleine Abzüge.', 'Mixed picture: many small deductions.'),
+    bad: top.length ? L(`${topNames} ${costs} ${topLost} der ${lostSum} verlorenen Punkte.`, `${topNames} ${costs} ${topLost} of the ${lostSum} lost points.`)
+      : L(`${lostSum} Punkte verloren, verteilt auf mehrere Kriterien.`, `${lostSum} points lost, spread across several criteria.`),
+  }[cls] + (cls !== 'good' && winners.length ? ` ${L('Stark', 'Strong')}: ${winners.map((c) => c.name).join(', ')}.` : '');
   const levers = crit.filter((c) => c.lost >= 1).sort((a, b) => b.lost - a.lost).slice(0, 3);
   const f = (v) => moFmtSymPrice(v, r.symbol);
 
   $('sc-whyTitle').innerHTML = `${pairLink(r.symbol, `${r.base}/${r.quote || 'USDT'}`, r.quote || 'USDT')} <span class="badge ${cls}">${verdictLabel(cls)}</span>`;
   $('sc-whyBody').innerHTML = `
     <div class="wy-sec">
-      <div class="wy-score-row"><span class="wy-score-big">${score}<small> / 100 Punkte</small></span><span class="wy-score-note">${wyDistance(rt)}</span></div>
+      <div class="wy-score-row"><span class="wy-score-big">${score}<small> / 100 ${L('Punkte', 'points')}</small></span><span class="wy-score-note">${wyDistance(rt)}</span></div>
       ${wyScale(score)}
-      <div class="wy-lead ${cls}"><b>Kurz gesagt:</b> ${lead}</div>
+      <div class="wy-lead ${cls}"><b>${L('Kurz gesagt:', 'In short:')}</b> ${lead}</div>
     </div>
     <div class="wy-sec">
-      <h4 class="wy-h">Wo die Punkte herkommen</h4>
+      <h4 class="wy-h">${L('Wo die Punkte herkommen', 'Where the points come from')}</h4>
       ${wyPointsBar(rt)}
     </div>
     <div class="wy-sec">
-      <h4 class="wy-h">Messwerte und Punkte</h4>
+      <h4 class="wy-h">${L('Messwerte und Punkte', 'Values and points')}</h4>
       ${wyCritTable(rt)}
     </div>
     <div class="wy-sec">
-      <h4 class="wy-h">Kursverlauf der bewerteten 83 Tage</h4>
+      <h4 class="wy-h">${L('Kursverlauf der bewerteten 83 Tage', 'Price history of the 83 rated days')}</h4>
       ${wyChartBox('sc-whyChart')}
       <div id="sc-whyFacts">${wyFacts([
-        ['…', 'Veränderung Start → Ende'],
-        [r.rangePct != null ? wyNf(r.rangePct, 1) + ' %' : '–', 'Spanne Tief → Hoch'],
-        [r.driftRatio != null ? wyNf(r.driftRatio * 100, 0) + ' %' : '–', 'Trend-Anteil (Netto ÷ Spanne)'],
-        ['…', 'Kurs bei Bewertung'],
+        ['…', SC_FACT_LABELS[0]],
+        [r.rangePct != null ? wyNf(r.rangePct, 1) + ' %' : '–', SC_FACT_LABELS[1]],
+        [r.driftRatio != null ? wyNf(r.driftRatio * 100, 0) + ' %' : '–', SC_FACT_LABELS[2]],
+        ['…', SC_FACT_LABELS[3]],
       ])}</div>
       ${wyGate(rt)}
     </div>
     <div class="wy-sec">
-      <h4 class="wy-h">${cls === 'good' ? 'Wo noch Punkte liegen' : 'Was müsste sich ändern?'}</h4>
-      ${levers.length ? levers.map((c) => `<div class="wy-lever"><span>${c.name}: aktuell ${c.value}, voll bei ${c.ideal}</span><b class="wy-good-txt">bis +${wyNf(c.lost, 1)} P.</b></div>`).join('') : '<p class="wy-hint">Alle Kriterien voll erfüllt.</p>'}
+      <h4 class="wy-h">${cls === 'good' ? L('Wo noch Punkte liegen', 'Where points remain') : L('Was müsste sich ändern?', 'What would need to change?')}</h4>
+      ${levers.length ? levers.map((c) => `<div class="wy-lever"><span>${c.name}: ${L('aktuell', 'currently')} ${c.value}, ${L('voll bei', 'full at')} ${c.ideal}</span><b class="wy-good-txt">${L('bis', 'up to')} +${wyNf(c.lost, 1)} ${L('P.', 'pts')}</b></div>`).join('') : `<p class="wy-hint">${L('Alle Kriterien voll erfüllt.', 'All criteria fully met.')}</p>`}
       ${wyHow(rt)}
     </div>
     <div class="wy-foot">
-      <span>Bewertet am ${r.ratedAt ? new Date(r.ratedAt).toLocaleString('de-CH', { dateStyle: 'short', timeStyle: 'short' }) : '–'} · Basis: 500 4h-Kerzen (~83 Tage). Momentaufnahme, keine Anlageberatung.</span>
-      ${fromAnalyse ? '' : '<button type="button" class="primary" id="sc-whyAnalyse">Analysieren</button>'}
+      <span>${L('Bewertet am', 'Rated on')} ${r.ratedAt ? new Date(r.ratedAt).toLocaleString(DATE_LOCALE, { dateStyle: 'short', timeStyle: 'short' }) : '–'} · ${L('Basis: 500 4h-Kerzen (~83 Tage). Momentaufnahme, keine Anlageberatung.', 'Basis: 500 4h candles (~83 days). Snapshot, not investment advice.')}</span>
+      ${fromAnalyse ? '' : `<button type="button" class="primary" id="sc-whyAnalyse">${L('Analysieren', 'Analyse')}</button>`}
     </div>
   `;
   if (!fromAnalyse) $('sc-whyAnalyse').addEventListener('click', () => { $('sc-whyDialog').close(); scGoAnalyse(r.symbol); });
@@ -3526,7 +3792,7 @@ function scShowWhy(r, { fromAnalyse = false } = {}) {
 // Kursverlauf zur Bewertung nachladen (Kerzen werden im Scanner nicht gespeichert)
 async function scDrawWhyChart(r, f) {
   const el = $('sc-whyChart');
-  el.querySelector('svg').outerHTML = '<p class="wy-hint wy-chart-msg">Kursverlauf wird geladen …</p><svg></svg>';
+  el.querySelector('svg').outerHTML = `<p class="wy-hint wy-chart-msg">${L('Kursverlauf wird geladen …', 'Loading price history …')}</p><svg></svg>`;
   let c4;
   try {
     c4 = await fetchKlines(r.symbol, '4h', r.ratedAt ? { limit: 500, endTime: r.ratedAt } : { limit: 500 });
@@ -3537,22 +3803,22 @@ async function scDrawWhyChart(r, f) {
   if ($('sc-whyChart') !== el || !$('sc-whyDialog').open) return;
   const msg = el.querySelector('.wy-chart-msg');
   const daily = scToDaily(c4);
-  if (daily.length < 2) { msg.textContent = 'Kursverlauf konnte nicht geladen werden.'; return; }
+  if (daily.length < 2) { msg.textContent = L('Kursverlauf konnte nicht geladen werden.', 'Price history could not be loaded.'); return; }
   msg.remove();
   const closes = daily.map((d) => d.close);
   const first = c4[0].close, last = c4[c4.length - 1].close;
   const hi = Math.max(...c4.map((c) => c.high)), lo = Math.min(...c4.map((c) => c.low));
   const chg = (last - first) / first * 100;
   $('sc-whyFacts').innerHTML = wyFacts([
-    [wyPct(chg), 'Veränderung Start → Ende', chg >= 0 ? 'good' : 'bad'],
-    [r.rangePct != null ? wyNf(r.rangePct, 1) + ' %' : wyNf((hi - lo) / lo * 100, 1) + ' %', 'Spanne Tief → Hoch'],
-    [r.driftRatio != null ? wyNf(r.driftRatio * 100, 0) + ' %' : '–', 'Trend-Anteil (Netto ÷ Spanne)'],
-    [f(last), 'Kurs bei Bewertung'],
+    [wyPct(chg), SC_FACT_LABELS[0], chg >= 0 ? 'good' : 'bad'],
+    [r.rangePct != null ? wyNf(r.rangePct, 1) + ' %' : wyNf((hi - lo) / lo * 100, 1) + ' %', SC_FACT_LABELS[1]],
+    [r.driftRatio != null ? wyNf(r.driftRatio * 100, 0) + ' %' : '–', SC_FACT_LABELS[2]],
+    [f(last), SC_FACT_LABELS[3]],
   ]);
   wyLineChart(el, {
     series: closes, t0: daily[0].time, dt: 864e5, fmt: f, trend: true,
-    hlines: [{ v: hi, label: 'Hoch' }, { v: lo, label: 'Tief' }],
-    note: 'gestrichelt = Netto-Richtung Start → Ende',
+    hlines: [{ v: hi, label: L('Hoch', 'High') }, { v: lo, label: L('Tief', 'Low') }],
+    note: L('gestrichelt = Netto-Richtung Start → Ende', 'dashed = net direction start → end'),
   });
 }
 
@@ -3624,7 +3890,7 @@ function initTabs() {
   initMonitorTab();
   initScannerTab();
 
-  $('an-loadStatus').textContent = 'Lade Handelspaare …';
+  $('an-loadStatus').textContent = L('Lade Handelspaare …', 'Loading trading pairs …');
   try {
     await loadAllSymbols();
     for (const [q, p] of [['an-quote', 'an-pair'], ['mo-quote', 'mo-symbol']]) {
@@ -3639,6 +3905,6 @@ function initTabs() {
     $('an-loadStatus').textContent = '';
     $('an-checkBtn').disabled = false;
   } catch (e) {
-    $('an-loadStatus').textContent = 'Handelspaare konnten nicht geladen werden: ' + e.message;
+    $('an-loadStatus').textContent = L('Handelspaare konnten nicht geladen werden: ', 'Trading pairs could not be loaded: ') + e.message;
   }
 })();

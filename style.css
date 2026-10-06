@@ -19,7 +19,13 @@ h2{font-size:1.15rem}
 h3{font-size:1.02rem; margin-top:0}
 
 .topbar{border-bottom:1px solid var(--border); background:#12151a;}
-.topbar-inner{max-width:1400px; margin:0 auto; padding:22px 20px 4px;}
+.topbar-inner{max-width:1400px; margin:0 auto; padding:22px 20px 4px; position:relative;}
+.lang-switch{position:absolute; top:18px; right:20px; display:flex; border:1px solid var(--border); border-radius:8px; overflow:hidden;}
+.lang-btn{background:transparent; color:var(--muted); border:0; border-radius:0; padding:5px 11px; font-size:12px; font-weight:600; letter-spacing:.04em; cursor:pointer;}
+.lang-btn + .lang-btn{border-left:1px solid var(--border);}
+.lang-btn:hover{color:var(--text);}
+.lang-btn.active{background:var(--accent); color:#fff;}
+@media (max-width:600px){ .topbar-inner h1{padding-right:96px;} }
 .subtitle{color:var(--muted); margin:0 0 16px; font-size:.92rem;}
 .tabs{max-width:1400px; margin:0 auto; display:flex; gap:4px; padding:0 20px;}
 .tab-btn{
